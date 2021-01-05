@@ -1,0 +1,263 @@
+---
+title: "Likeliness to Recommend to a Friend or Colleague"
+output:
+  rmdformats::robobook:
+    self_contained: true # Other options are downcute, material, readthedown, html_clean, html_docco, lockdown, https://github.com/juba/rmdformats
+    thumbnails: false
+    lightbox: true
+    gallery: false
+    highlight: kate # Also can do tango
+    number_sections: false
+    includes:
+      after_body: footer.html
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, 
+                      message = F, 
+                      warning = F, 
+                      fig.align = 'center', 
+                      cache = F, 
+                      tidy = T) # No messages, warnings, code echo, align figures center, cache images, and tidy
+library(tidyverse) # So you don't have to code in base R
+library(hrbrthemes) # For pretty graphing themes
+library(readr) # Reading in rds
+library(here) # Cross network consistency
+library(scales) # For graphing scales
+library(ggrepel) # For text output on graphs
+theme_set(theme_minimal())
+teaching_colors <- c("#04ABEB", "#040404", "#346475", "#324D56") # Teaching Lab Color Palette - derived from logo
+col = grDevices::colorRampPalette(c("#040404", "#04ABEB")) # Color palette maker for blue theme, based on teaching lab color palette
+htmltools::tagList(rmarkdown::html_dependency_font_awesome()) # Needed so fa's in footer will show
+```
+
+```{r}
+teaching_df <- read_rds(here("Data/final_df.rds")) # Read in the data
+teaching_lab_df <- read_rds(here("Data/original_df.rds")) # Read original data for column names
+original_columns <- colnames(teaching_lab_df)
+# original_columns # Run if you want to make sure columns match to original data, has to be
+
+# Vector of columns to make factors
+cols <- c("professional_training_session", 
+          "select_your_site_district_parish_or_network", 
+          "select_the_grade_band_s_you_focused_on", 
+          "learning_session_satisfaction",
+          "todays_topic_was_relevant_for_my_role",
+          "designed_to_help_me_learn",
+          "likely_to_apply_46_weeks",
+          "select_the_name_of_your_first_facilitator",
+          "s_he_facilitated_the_content_clearly_12",
+          "did_you_have_a_second_facilitator",
+          "select_the_name_of_your_second_facilitator",
+          "s_he_facilitated_the_content_clearly_16",
+          "s_he_effectively_built_a_community_of_learners_17") 
+
+# Columns based on agreement
+cols_agree <- c("learning_session_satisfaction", 
+                "todays_topic_was_relevant_for_my_role", 
+                "designed_to_help_me_learn", 
+                "likely_to_apply_46_weeks",
+                "s_he_facilitated_the_content_clearly_12",
+                "s_he_facilitated_the_content_clearly_16",
+                "s_he_effectively_built_a_community_of_learners_17",
+                "s_he_effectively_built_a_community_of_learners_13")
+```
+
+
+Which teaching sessions are highest and lowest rated? To find out I plot every single teaching session that has occurred, which results in a lot of plots. Scrolling through all of these is a bit of a hassle but there's really only a couple standouts here, pretty much everything has high scores, except for a couple of the "Guidebooks Diverse Learners", "EL Virtual Bootcamp", "Nebraska Virtual Series", and "IM Bootcamp, Day 2: STRIVE/CPS". I have organized these by the curriculum portfolio, which is titled in between each plot grouping, and highlighted all post-pandemic scores as red for clarity, and finally, arranged the plots by lowest average score for the group. Many of the post-pandemic sessions show up first illustrating a clear score drop in recent times.
+
+# EL
+
+```{r}
+# Group and then score the data, filter for the pertinent group
+grouped_teaching <- teaching_df %>%
+    group_by(professional_training_session, date_for_the_session) %>%
+    mutate(count = length(professional_training_session),
+           score = sum(likely_to_recommend_colleague_friend)/count) %>%
+    ungroup() %>%
+  drop_na(professional_training_session) %>%
+  dplyr::filter(str_detect(professional_training_session, "EL") == T) %>%# Important filtering part
+  arrange(score) # Arrange for plotting
+# Loop through each training session per date, and create a column for average score
+for (var in unique(grouped_teaching$professional_training_session)) {
+  plot_teaching <- grouped_teaching %>%
+    dplyr::filter(professional_training_session == var)# Filter for each separate training session before graphing
+  # Lollipop graph by date and training session
+    plot <- ggplot(plot_teaching, 
+                   aes(x = date_for_the_session, y = score)) +
+      ggplot2::ylim(0, 10) +
+      geom_col(position = "dodge", 
+               fill = ifelse(plot_teaching$date_for_the_session >= as.Date("2020-04-01"), 
+                             "red3", 
+                             "#04ABEB"),
+               color = ifelse(plot_teaching$date_for_the_session >= as.Date("2020-04-01"), 
+                             "red3", 
+                             "#04ABEB"),
+               width = 1) +
+      geom_point(color = "black") +
+        geom_hline(linetype = "F1", 
+                   color = "black", 
+                   aes(yintercept = 8.913986)) +
+        geom_text(aes(label = "Mean likeliness\n to recommend to a\n colleague or friend", 
+                      x = as.Date("2020-05-01"), 
+                      y = 10), 
+                  color = "black",
+                  size = 2) + 
+      geom_segment(aes(x = as.Date("2020-05-01"), y = 9.5, xend = as.Date("2020-05-01"), yend = 9), 
+                   arrow = arrow(length = unit(0.05, "cm"))) +
+      ggtitle(paste(var)) +
+      labs(x = "Date", y = "Group Likeliness to Recommend to Colleague or Friend") +
+      scale_x_date(date_labels = "%b %Y", limits = c(as.Date("2019-06-05"), Sys.Date())) +
+      theme(legend.position = "none",
+            plot.title = element_text(hjust = 0.5))
+    print(plot)
+}
+```
+
+# Guidebooks
+
+```{r}
+# There's Guidebooks, and GuideBooks so vector for later filter
+guidebooks <- c("Guidebooks|GuideBooks")
+# Group and then score the data, filter for the pertinent group
+grouped_teaching <- teaching_df %>%
+    group_by(professional_training_session, date_for_the_session) %>%
+    mutate(count = length(professional_training_session),
+           score = sum(likely_to_recommend_colleague_friend)/count) %>%
+    ungroup() %>%
+  drop_na(professional_training_session) %>%
+  dplyr::filter(str_detect(professional_training_session, guidebooks) == T) %>%# Important filtering part
+  arrange(score) # Arrange for plotting
+# Loop through each training session per date, and create a column for average score
+for (var in unique(grouped_teaching$professional_training_session)) {
+  plot_teaching <- grouped_teaching %>%
+    dplyr::filter(professional_training_session == var)# Filter for each separate training session before graphing
+  # Lollipop graph by date and training session
+    plot <- ggplot(plot_teaching, 
+                   aes(x = date_for_the_session, y = score)) +
+      ggplot2::ylim(0, 10) +
+      geom_col(position = "dodge", 
+               fill = ifelse(plot_teaching$date_for_the_session >= as.Date("2020-04-01"), 
+                             "red3", 
+                             "#04ABEB"),
+               color = ifelse(plot_teaching$date_for_the_session >= as.Date("2020-04-01"), 
+                             "red3", 
+                             "#04ABEB"),
+               width = 1) +
+      geom_point(color = "black") +
+        geom_hline(linetype = "F1", 
+                   color = "black", 
+                   aes(yintercept = 8.913986)) +
+        geom_text(aes(label = "Mean likeliness\n to recommend to a\n colleague or friend", 
+                      x = as.Date("2020-05-01"), 
+                      y = 10), 
+                  color = "black",
+                  size = 2) + 
+      geom_segment(aes(x = as.Date("2020-05-01"), y = 9.5, xend = as.Date("2020-05-01"), yend = 9), 
+                   arrow = arrow(length = unit(0.05, "cm"))) +
+      ggtitle(paste(var)) +
+      labs(x = "Date", y = "Group Likeliness to Recommend to Colleague or Friend") +
+      scale_x_date(date_labels = "%b %Y", limits = c(as.Date("2019-06-05"), Sys.Date())) +
+      theme(legend.position = "none",
+            plot.title = element_text(hjust = 0.5))
+    print(plot)
+}
+```
+
+# Illustrative Mathematics (IM)
+
+```{r}
+# Group and then score the data, filter for the pertinent group
+grouped_teaching <- teaching_df %>%
+    group_by(professional_training_session, date_for_the_session) %>%
+    mutate(count = length(professional_training_session),
+           score = sum(likely_to_recommend_colleague_friend)/count) %>%
+    ungroup() %>%
+  drop_na(professional_training_session) %>%
+  dplyr::filter(str_detect(professional_training_session, "IM") == T) %>%# Important filtering part
+  arrange(score) # Arrange for plotting
+# Loop through each training session per date, and create a column for average score
+for (var in unique(grouped_teaching$professional_training_session)) {
+  plot_teaching <- grouped_teaching %>%
+    dplyr::filter(professional_training_session == var)# Filter for each separate training session before graphing
+  # Lollipop graph by date and training session
+    plot <- ggplot(plot_teaching, 
+                   aes(x = date_for_the_session, y = score)) +
+      ggplot2::ylim(0, 10) +
+      geom_col(position = "dodge", 
+               fill = ifelse(plot_teaching$date_for_the_session >= as.Date("2020-04-01"), 
+                             "red3", 
+                             "#04ABEB"),
+               color = ifelse(plot_teaching$date_for_the_session >= as.Date("2020-04-01"), 
+                             "red3", 
+                             "#04ABEB"),
+               width = 1) +
+      geom_point(color = "black") +
+        geom_hline(linetype = "F1", 
+                   color = "black", 
+                   aes(yintercept = 8.913986)) +
+        geom_text(aes(label = "Mean likeliness\n to recommend to a\n colleague or friend", 
+                      x = as.Date("2020-05-01"), 
+                      y = 10), 
+                  color = "black",
+                  size = 2) + 
+      geom_segment(aes(x = as.Date("2020-05-01"), y = 9.5, xend = as.Date("2020-05-01"), yend = 9), 
+                   arrow = arrow(length = unit(0.05, "cm"))) +
+      ggtitle(paste(var)) +
+      labs(x = "Date", y = "Group Likeliness to Recommend to Colleague or Friend") +
+      scale_x_date(date_labels = "%b %Y", limits = c(as.Date("2019-06-05"), Sys.Date())) +
+      theme(legend.position = "none",
+            plot.title = element_text(hjust = 0.5))
+    print(plot)
+}
+```
+
+# State-level work
+
+```{r}
+not_state_level <- c("EL|IM|Guidebooks|GuideBooks") # Define those for which we should filter for later
+# Group and then score the data, filter for the pertinent group
+grouped_teaching <- teaching_df %>%
+    group_by(professional_training_session, date_for_the_session) %>%
+    mutate(count = length(professional_training_session),
+           score = sum(likely_to_recommend_colleague_friend)/count) %>%
+    ungroup() %>%
+  drop_na(professional_training_session) %>%
+  dplyr::filter(!str_detect(professional_training_session, not_state_level)) %>% # Filter for State level work
+  arrange(score) # Arrange for plotting
+# Loop through each training session per date, and create a column for average score
+for (var in unique(grouped_teaching$professional_training_session)) {
+  plot_teaching <- grouped_teaching %>%
+    dplyr::filter(professional_training_session == var)# Filter for each separate training session before graphing
+  # Lollipop graph by date and training session
+    plot <- ggplot(plot_teaching, 
+                   aes(x = date_for_the_session, y = score)) +
+      ggplot2::ylim(0, 10) +
+      geom_col(position = "dodge", 
+               fill = ifelse(plot_teaching$date_for_the_session >= as.Date("2020-04-01"), 
+                             "red3", 
+                             "#04ABEB"),
+               color = ifelse(plot_teaching$date_for_the_session >= as.Date("2020-04-01"), 
+                             "red3", 
+                             "#04ABEB"),
+               width = 1) +
+      geom_point(color = "black") +
+        geom_hline(linetype = "F1", 
+                   color = "black", 
+                   aes(yintercept = 8.913986)) +
+        geom_text(aes(label = "Mean likeliness\n to recommend to a\n colleague or friend", 
+                      x = as.Date("2020-05-01"), 
+                      y = 10), 
+                  color = "black",
+                  size = 2) + 
+      geom_segment(aes(x = as.Date("2020-05-01"), y = 9.5, xend = as.Date("2020-05-01"), yend = 9), 
+                   arrow = arrow(length = unit(0.05, "cm"))) +
+      ggtitle(paste(var)) +
+      labs(x = "Date", y = "Group Likeliness to Recommend to Colleague or Friend") +
+      scale_x_date(date_labels = "%b %Y", limits = c(as.Date("2019-06-05"), Sys.Date())) +
+      theme(legend.position = "none",
+            plot.title = element_text(hjust = 0.5))
+    print(plot)
+}
+```
+

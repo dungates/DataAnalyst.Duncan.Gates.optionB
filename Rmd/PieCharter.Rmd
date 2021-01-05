@@ -1,0 +1,180 @@
+---
+title: "Pie Chart Maker"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = F, 
+                      message = F, 
+                      warning = F, 
+                      fig.align = 'center', 
+                      cache = F, 
+                      tidy = T) # No messages, warnings, code echo, align figures center, cache images, and tidy
+library(tidyverse)
+library(here)
+library(scales) # For graphing scales
+library(shiny)
+library(DT)
+library(grDevices)
+teaching_colors <- c("#04ABEB", "#040404", "#346475", "#324D56") # Teaching Lab Color Palette - derived from logo
+col = grDevices::colorRampPalette(c("#040404", "#04ABEB")) # Color palette maker for blue theme, based on teaching lab color palette
+```
+
+```{r}
+teaching_df <- read_rds(here("Data/final_df.rds")) # Read in the data
+teaching_lab_df <- read_rds(here("Data/original_df.rds")) # Read original data for column names
+original_columns <- colnames(teaching_lab_df)
+# original_columns # Run if you want to make sure columns match to original data, has to be
+
+# Vector of columns to make factors
+cols <- c("professional_training_session", 
+          "select_your_site_district_parish_or_network", 
+          "select_the_grade_band_s_you_focused_on", 
+          "learning_session_satisfaction",
+          "todays_topic_was_relevant_for_my_role",
+          "designed_to_help_me_learn",
+          "likely_to_apply_46_weeks",
+          "select_the_name_of_your_first_facilitator",
+          "s_he_facilitated_the_content_clearly_12",
+          "did_you_have_a_second_facilitator",
+          "select_the_name_of_your_second_facilitator",
+          "s_he_facilitated_the_content_clearly_16",
+          "s_he_effectively_built_a_community_of_learners_17") 
+
+# Columns based on agreement
+cols_agree <- c("learning_session_satisfaction", 
+                "todays_topic_was_relevant_for_my_role", 
+                "designed_to_help_me_learn", 
+                "likely_to_apply_46_weeks",
+                "s_he_facilitated_the_content_clearly_12",
+                "s_he_facilitated_the_content_clearly_16",
+                "s_he_effectively_built_a_community_of_learners_17",
+                "s_he_effectively_built_a_community_of_learners_13")
+```
+
+Making a circle chart for each factor using a function, this could also be done with a for loop or purrr::map(), but I assume you want to look at a specific variable if you are using this most of the time. I know this isn't super pretty but Shiny gets pretty complicated when you try to make it look good and I think this is deciperable at the least. Each possible option is provided below:
+
+```{r}
+selectInput("data", cols, width = '600px',
+            label = h3("Select Variable:")) # Basic Shiny Input Take
+```
+
+
+```{r cache = F, eval = F}
+# Original function I wrote that has to be implemented differently for shiny when taking input it has to be called to a reactive first,
+# so it can have defineable columns to read, and the string input to pieCharter is indecipherable to renderPlot for some reason
+pieCharter <- function(variable) {
+    plot_data <- teaching_df %>%
+          dplyr::group_by({{variable}}) %>% # Group by input variable
+          dplyr::summarise(n = n()) %>% # Get count of variable
+          ungroup() %>% # Ungroup
+          dplyr::mutate(percent = round(100 * (n / sum(n)), 2)) # Make a percent column
+    plot <- ggplot(plot_data, aes(x = 0, y = n, fill = reorder({{variable}}, n))) + #Pie chart input, ordered by n
+          labs(fill = "Type", x = NULL, y = NULL, 
+               title = paste("Percentage of", colnames(plot_data)[1]), 
+               subtitle = "Variables with greater than 5% occurrence") +
+          geom_bar(stat = "identity", color = "gray", width = 0.5) + # Using bar columns put in polar coordinates later
+          geom_text(aes(label = ifelse(percent > 5, 
+                                       paste0(percent, "%\n", {{variable}}), 
+                                       paste("")),
+                        x = 0.4), 
+                    position = position_stack(vjust = 0.5), #position stack normally stacks bars, but here it keeps the text in the right place once put in polar
+                    size = 3,
+                    fontface = "bold") + # Add bold text with percentage and variable label
+          scale_x_continuous(expand = c(0, 0)) + # Change x so expand is not default and adds no padding so the bars will produce a circle not a donut
+          coord_polar(theta = "y", direction = -1) + # Make bars polar
+          scale_fill_manual(values = c(col(nrow(plot_data)))) + # custom colors
+          theme_void() + # Remove all panel elements
+          theme(legend.position = "none",
+                plot.title = element_text(hjust = 0.5),
+                plot.subtitle = element_text(hjust = 0.5))
+          print(plot)
+}
+```
+
+
+Plot will render here:
+
+```{r cache = F}
+mydata <- reactive({
+  teaching_df %>%
+          dplyr::group_by(get(input$data)) %>% # Group by input variable
+          dplyr::summarise(n = n()) %>% # Get count of variable
+          ungroup() %>% # Ungroup
+          dplyr::mutate(percent = round(100 * (n / sum(n)), 2)) # Make a percent column
+})
+
+renderPlot({
+  # ggplot2::ggplot(mydata(), aes(x = 0, y = n, fill = reorder(`get(input$data)`, n))) + #Pie chart input, ordered by n
+  #         labs(fill = "Type", x = NULL, y = NULL,
+  #              title = paste("Percentage of", as.character(input$data),
+  #              subtitle = "Variables with greater than 5% occurrence")) +
+  #         geom_bar(stat = "identity", color = "gray", width = 0.5)
+  
+  ggplot2::ggplot(mydata(), aes(x = 0, y = n, fill = reorder(`get(input$data)`, n))) + #Pie chart input, ordered by n
+          labs(fill = "Type", x = NULL, y = NULL,
+               title = paste("Percentage of", as.character(input$data)),
+               subtitle = "Variables with greater than 5% occurrence") +
+          geom_bar(stat = "identity", color = "gray", width = 0.5) + # Using bar columns put in polar coordinates later
+          geom_text(aes(label = ifelse(percent > 5,
+                                       paste0(percent, "%\n", as.character(`get(input$data)`)),
+                                       paste("")),
+                        x = 0.4),
+                    position = position_stack(vjust = 0.5), #position stack normally stacks bars, but here it keeps the text in the right place once put in polar
+                    size = 3,
+                    fontface = "bold") + # Add bold text with percentage and variable label
+          scale_x_continuous(expand = c(0, 0)) + # Change x so expand is not default and adds no padding so the bars will produce a circle not a donut
+          coord_polar(theta = "y", direction = -1) + # Make bars polar
+          scale_fill_manual(values = c(col(nrow(mydata())))) + # custom colors
+          theme_void() + # Remove all panel elements
+          theme(legend.position = "none",
+                plot.title = element_text(hjust = 0.5),
+                plot.subtitle = element_text(hjust = 0.5))
+})
+```
+
+A table will render here:
+
+```{r}
+DT::renderDT({
+  DT::datatable(mydata(), colnames = c(paste(str_to_title(input$data), "Group"), "Number", "Percent"))
+})
+
+renderText({ 
+    paste("You have selected", str_to_title(input$data))
+  })
+```
+
+
+
+
+
+```{r cache = F}
+# pieCharter(variable = professional_training_session)
+# pieCharter(variable = select_your_site_district_parish_or_network)
+# pieCharter(variable = select_the_grade_band_s_you_focused_on)
+# pieCharter(variable = learning_session_satisfaction)
+# pieCharter(variable = todays_topic_was_relevant_for_my_role)
+# pieCharter(variable = designed_to_help_me_learn)
+# print(pieCharter(variable = likely_to_apply_46_weeks))
+# pieCharter(variable = select_the_name_of_your_first_facilitator)
+# pieCharter(variable = s_he_facilitated_the_content_clearly_12)
+# pieCharter(variable = did_you_have_a_second_facilitator)
+# pieCharter(variable = select_the_name_of_your_second_facilitator)
+# pieCharter(variable = s_he_facilitated_the_content_clearly_16)
+# pieCharter(variable = s_he_effectively_built_a_community_of_learners_17)
+
+# teaching_df %>%
+#   {map2(list(.), names(teaching_df[cols]), ~ pieCharter)}
+# Wanted to map this, really hard for some reason not worth the time to figure out, for some reason ggplot output is weird with map
+```
+
+
+
+
+
+
+
+

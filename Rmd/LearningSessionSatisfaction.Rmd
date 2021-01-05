@@ -1,0 +1,143 @@
+---
+title: "Learning Session Satisfaction Scores"
+output:
+  rmdformats::robobook:
+    self_contained: true # Other options are downcute, material, readthedown, html_clean, html_docco, lockdown, https://github.com/juba/rmdformats
+    thumbnails: false
+    lightbox: true
+    gallery: false
+    highlight: kate # Also can do tango
+    number_sections: false
+    includes:
+      after_body: footer.html
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, 
+                      message = F, 
+                      warning = F, 
+                      fig.align = 'center', 
+                      cache = F, 
+                      tidy = T) # No messages, warnings, code echo, align figures center, cache images, and tidy
+library(tidyverse) # So you don't have to code in base R
+library(hrbrthemes) # For pretty graphing themes
+library(readr) # Reading in rds
+library(here) # Cross network consistency
+library(scales) # For graphing scales
+library(tidytext) # For checking survey text data
+theme_set(theme_minimal() + theme(plot.title = element_text(hjust = 0.5)))
+teaching_colors <- c("#04ABEB", "#040404", "#346475", "#324D56") # Teaching Lab Color Palette - derived from logo
+col = grDevices::colorRampPalette(c("#040404", "#04ABEB")) # Color palette maker for blue theme, based on teaching lab color palette
+htmltools::tagList(rmarkdown::html_dependency_font_awesome()) # Needed so fa's in footer will show
+```
+
+```{r}
+teaching_df <- read_rds(here("Data/final_df.rds")) # Read in the data
+teaching_lab_df <- read_rds(here("Data/original_df.rds")) # Read original data for column names
+original_columns <- colnames(teaching_lab_df)
+# original_columns # Run if you want to make sure columns match to original data, has to be
+
+# Vector of columns to make factors
+cols <- c("professional_training_session", 
+          "select_your_site_district_parish_or_network", 
+          "select_the_grade_band_s_you_focused_on", 
+          "learning_session_satisfaction",
+          "todays_topic_was_relevant_for_my_role",
+          "designed_to_help_me_learn",
+          "likely_to_apply_46_weeks",
+          "select_the_name_of_your_first_facilitator",
+          "s_he_facilitated_the_content_clearly_12",
+          "did_you_have_a_second_facilitator",
+          "select_the_name_of_your_second_facilitator",
+          "s_he_facilitated_the_content_clearly_16",
+          "s_he_effectively_built_a_community_of_learners_17") 
+
+# Columns based on agreement
+cols_agree <- c("learning_session_satisfaction", 
+                "todays_topic_was_relevant_for_my_role", 
+                "designed_to_help_me_learn", 
+                "likely_to_apply_46_weeks",
+                "s_he_facilitated_the_content_clearly_12",
+                "s_he_facilitated_the_content_clearly_16",
+                "s_he_effectively_built_a_community_of_learners_17",
+                "s_he_effectively_built_a_community_of_learners_13")
+```
+
+# Visualizing a new column
+
+To address part 1, I plot learning session satisfaction over time, by instructor, by changing the responses "strongly agree, agree, neither agree nor disagree, disagree, and strongly disagree" to corresponding scores of "2, 1, 0, -1, -2". I then proceed to plot the mean score per session for all instructors, and per instructor in 2 different ways. This can be done with any factor variable, I did it with learning session satisfaction because I thought it was the best overall rating of how a facilitator did. Broadly speaking it seems like people are very satisfied with the learning sessions, although there is a slight dip as of late that can be attributed to the pandemic, which I denoted as starting April 1, when I recall most things going into lockdown.
+
+This first visual does a good job of emphasising when there were sessions that went poorly, as there are very few negative scores overall.
+
+```{r }
+teaching_df %>%
+  mutate(learning_session_satisfaction = case_when(learning_session_satisfaction == "Strongly agree" ~ 2,
+                                                   learning_session_satisfaction == "Agree" ~ 1,
+                                                   learning_session_satisfaction == "Neither agree nor disagree" ~ 0,
+                                                   learning_session_satisfaction == "Disagree" ~ -1,
+                                                   learning_session_satisfaction == "Strongly disagree" ~ -2)) %>%
+  drop_na(date_for_the_session, select_the_name_of_your_first_facilitator) %>%
+  group_by(date_for_the_session, select_the_name_of_your_first_facilitator) %>%
+  summarise(mean_score = mean(learning_session_satisfaction)) %>%
+  ggplot(aes(x = date_for_the_session, y = mean_score)) +
+  geom_col(color = "#04ABEB") +
+  facet_wrap( ~ select_the_name_of_your_first_facilitator) +
+  labs(x = "Date", y = "Mean Learning Session Satisfaction", title = "Learning Session Satisfaction Scores per Instructor") +
+  scale_x_date(breaks = breaks_pretty(n = 8), limits = c(as.Date(min(teaching_df$date_for_the_session, na.rm = T)), 
+                                                         as.Date(max(teaching_df$date_for_the_session, na.rm = T)))) +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 90))
+```
+
+# Time Trend
+
+This plot visualizes the trend per instructor over time very well, if I were to model scores over time I would definitely look at a time based structural break before and after the pandemic:
+
+```{r}
+teaching_df %>%
+  mutate(learning_session_satisfaction = case_when(learning_session_satisfaction == "Strongly agree" ~ 2,
+                                                   learning_session_satisfaction == "Agree" ~ 1,
+                                                   learning_session_satisfaction == "Neither agree nor disagree" ~ 0,
+                                                   learning_session_satisfaction == "Disagree" ~ -1,
+                                                   learning_session_satisfaction == "Strongly disagree" ~ -2)) %>%
+  drop_na(date_for_the_session, select_the_name_of_your_first_facilitator) %>%
+  group_by(date_for_the_session, select_the_name_of_your_first_facilitator) %>%
+  summarise(mean_score = mean(learning_session_satisfaction)) %>%
+  ggplot(aes(x = date_for_the_session, y = mean_score)) +
+  geom_point(color = "#04ABEB") +
+  geom_line() +
+  geom_vline(linetype = "dashed", color = "red", aes(xintercept = as.Date("2020-04-01"))) +
+  geom_text(color = "red", size = 2, aes(label = "Pandemic\n Start"), hjust = -0.1,
+            data = tibble(date_for_the_session = as.Date("2020-04-01"), mean_score = -1.5)) +
+  facet_wrap( ~ select_the_name_of_your_first_facilitator) +
+  labs(x = "Date", y = "Mean Learning Session Satisfaction", title = "Learning Session Satisfaction Scores per Instructor") +
+  scale_x_date() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 90),
+        plot.title = element_text(hjust = 0.5),
+        panel.spacing = unit(0.5, "lines"))
+```
+
+# All Scores
+
+This represents the overall trend and makes the slight decrease lately extremely apparent:
+
+```{r}
+teaching_df %>%
+  mutate(learning_session_satisfaction = case_when(learning_session_satisfaction == "Strongly agree" ~ 2,
+                                                   learning_session_satisfaction == "Agree" ~ 1,
+                                                   learning_session_satisfaction == "Neither agree nor disagree" ~ 0,
+                                                   learning_session_satisfaction == "Disagree" ~ -1,
+                                                   learning_session_satisfaction == "Strongly disagree" ~ -2)) %>%
+  drop_na(date_for_the_session, select_the_name_of_your_first_facilitator) %>%
+  group_by(date_for_the_session, select_the_name_of_your_first_facilitator) %>%
+  summarise(mean_score = mean(learning_session_satisfaction)) %>%
+  ggplot(aes(x = date_for_the_session, y = mean_score)) +
+  geom_point(color = "#04ABEB") +
+  geom_text(color = "red", size = 2, aes(label = "Pandemic\n Start"), hjust = -0.1,
+            data = tibble(date_for_the_session = as.Date("2020-04-01"), mean_score = -1.5)) +
+  geom_vline(linetype = "dashed", color = "red", aes(xintercept = as.Date("2020-04-01"))) +
+  labs(x = "Date", y = "Mean Score for Session", title = "All Learning Session Scores") +
+  scale_x_date(date_labels = "%b %Y", breaks = breaks_pretty(n = 8)) +
+  theme(plot.title = element_text(hjust = 0.5))
+```

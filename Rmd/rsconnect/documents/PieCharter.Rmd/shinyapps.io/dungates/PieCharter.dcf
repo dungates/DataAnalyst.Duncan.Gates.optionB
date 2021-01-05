@@ -1,0 +1,12 @@
+name: PieCharter
+title: PieCharter
+username:
+account: dungates
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3436995
+bundleId: 4045144
+url: https://dungates.shinyapps.io/PieCharter/
+when: 1609413509.69065
+asMultiple: FALSE
+asStatic: FALSE

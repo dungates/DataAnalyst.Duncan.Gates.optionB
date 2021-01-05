@@ -1,0 +1,132 @@
+---
+title: "Data Obtain and Clean"
+output:
+  rmdformats::html_docco:
+    self_contained: true # Other options are downcute, material, readthedown, html_clean, html_docco, lockdown, https://github.com/juba/rmdformats
+    thumbnails: false
+    lightbox: true
+    gallery: false
+    highlight: kate
+    number_sections: false
+    includes:
+      after_body: footer.html
+---
+
+## Libraries
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F, fig.align = 'center')
+suppressPackageStartupMessages(library(tidyverse)) # Data manipulation
+library(googlesheets4) # Reading in google sheets
+suppressPackageStartupMessages(library(janitor)) # For cleaning
+library(naniar) # For visualizing missing data
+suppressPackageStartupMessages(library(lares)) # For visualizing missing data
+library(readr) # For writing and reading data
+library(here) # For good file structure and replication
+library(gt) # Nice tables
+htmltools::tagList(rmarkdown::html_dependency_font_awesome()) # Needed so fa's in footer will show
+```
+
+## Reading in the Data
+
+The first thing I did was make a copy of the data because it is impossible to read in sheets that are saved as an xls, I could have also just saved it as an xls and then read it into R. If you try to replicate this it will request an OAuth token for use of a google account with googlesheets4 so make sure to run in R before knitting.
+
+```{r}
+teaching_lab_df <- read_sheet("https://docs.google.com/spreadsheets/d/10R_NGttRICpz5uIMjIfcNmYDC4cOkzm1Esl_eDnOKeo/edit#gid=0", 
+                              col_types = "Dcccccccccccccccccccdcc") # col_types to specify as D = date, c = character, d = double
+# Could easily be done with readxl::read_excel as well
+```
+
+## Initial Automated Cleaning
+
+I use janitor to change the names to space based on underscores so I don't have to type out full names.
+
+```{r}
+teaching_df <- teaching_lab_df %>%
+  rename_with( ~ gsub("\\.\\.\\*$", "", .)) %>% # use regex and dplyr to clean up column names, this one simply deletes everything with 2 or more dots in the column names
+  clean_names() # automated column name cleaning with janitor
+compare_df_cols(teaching_df, teaching_lab_df, bind_method = "bind_rows") %>%
+  gt::gt() %>%# check column name difference
+  tab_header(title = md("**Comparing Columns Before and After Janitor**")) %>%
+  tab_options(
+    table.background.color = "lightcyan"
+  )
+```
+
+
+## Secondary Data Cleaning
+
+Here I take a quick look at the data before secondary cleaning, and change some of the names of the ridiculously long columns. It is noteable that not a single row is entirely blank so everyone answered at least some of the questions.
+
+```{r fig.width = 12}
+cols <- c("professional_training_session", 
+          "select_your_site_district_parish_or_network", 
+          "select_the_best_description_for_your_role",
+          "select_the_grade_band_s_you_focused_on", 
+          "learning_session_satisfaction",
+          "todays_topic_was_relevant_for_my_role",
+          "designed_to_help_me_learn",
+          "likely_to_apply_46_weeks",
+          "select_the_name_of_your_first_facilitator",
+          "s_he_facilitated_the_content_clearly_12",
+          "did_you_have_a_second_facilitator",
+          "select_the_name_of_your_second_facilitator",
+          "s_he_facilitated_the_content_clearly_16",
+          "s_he_effectively_built_a_community_of_learners_17") # Vector of columns to make factors
+cols_agree <- c("learning_session_satisfaction", 
+                "todays_topic_was_relevant_for_my_role", 
+                "designed_to_help_me_learn", 
+                "likely_to_apply_46_weeks",
+                "s_he_facilitated_the_content_clearly_12",
+                "s_he_facilitated_the_content_clearly_16",
+                "s_he_effectively_built_a_community_of_learners_17",
+                "s_he_effectively_built_a_community_of_learners_13") # Vector of columns to add levels
+teaching_df <- teaching_df %>%
+  rename(learning_session_satisfaction = i_am_satisfied_with_the_overall_quality_of_todays_professional_learning_session,
+              designed_to_help_me_learn = the_activities_of_todays_session_were_well_designed_to_help_me_learn,
+              learning_to_try_out = what_is_the_learning_from_this_professional_learning_that_you_are_most_excited_about_trying_out,
+              likely_to_apply_46_weeks = how_likely_are_you_to_apply_this_learning_to_your_practice_in_the_next_4_6_weeks,
+              likely_to_recommend_colleague_friend = how_likely_are_you_to_recommend_this_professional_learning_to_a_colleague_or_friend) %>%
+  mutate_each_(funs(factor(.)), 
+    vars = cols) %>%
+  mutate_each_(funs(factor(.,
+                           levels = c("Strongly disagree", "Disagree", "Neither agree nor disagree", "Agree", "Strongly agree"))),
+               vars = cols_agree) # First rename some of the columns then make them factors and add levels, cols filters which variables to do this for 
+```
+
+## Visualizing Missing Data
+
+```{r echo = F}
+lares::df_str(teaching_df) + 
+  scale_fill_manual(values = c("#04ABEB", "#040404", "#346475")) +
+  ggtitle("Teaching Lab Dataset Structure") +
+  theme(plot.title = element_text(hjust = 0.5))
+teaching_df %>% 
+  vis_miss() + theme(axis.text.x.top = element_text(size = 5),
+                     plot.title = element_text(hjust = 0.5),
+                     plot.subtitle = element_text(hjust = 0.5)) + 
+  ggtitle("Missing Data by Column") + 
+  scale_fill_manual(values = c("#04ABEB", "#040404")) + 
+  labs(fill = "Missing")
+teaching_df %>%
+  gg_miss_var()
+```
+
+```{r}
+original_columns <- colnames(teaching_lab_df) # Just useful to have for later, not important if knit
+```
+
+
+## Saving Data
+
+```{r}
+# write_rds(teaching_df, here("Data/final_df.rds"))
+# write_rds(teaching_lab_df, here("Data/original_df.rds"))
+```
+
+
+
+
+
+
+

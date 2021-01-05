@@ -1,0 +1,513 @@
+---
+title: "Sentiment/Textual Analysis"
+output:
+  rmdformats::robobook:
+    self_contained: true # Other options are downcute, material, readthedown, html_clean, html_docco, lockdown, https://github.com/juba/rmdformats
+    thumbnails: false
+    lightbox: true
+    gallery: false
+    highlight: kate # Also can do tango
+    number_sections: false
+    includes:
+      after_body: footer.html
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, 
+                      message = F, 
+                      warning = F, 
+                      fig.align = 'center', 
+                      cache = F, 
+                      tidy = T) # No messages, warnings, code echo, align figures center, cache images, and tidy
+library(tidyverse) # So you don't have to code in base R
+library(hrbrthemes) # For pretty graphing themes
+library(readr) # Reading in rds
+library(here) # Cross network consistency
+library(scales) # For graphing scales
+library(tidytext) # For checking survey text data
+library(topicmodels) # Also for sentiment analysis
+library(ggraph) # Networking
+library(igraph) # Networking
+library(gt) # Tables
+library(gtsummary) # Also Tables
+theme_set(theme_minimal() + theme(plot.title = element_text(hjust = 0.5))) # General theme
+teaching_colors <- c("#04ABEB", "#040404", "#346475", "#324D56") # Teaching Lab Color Palette - derived from logo
+col = grDevices::colorRampPalette(c("#040404", "#04ABEB")) # Color palette maker for blue theme, based on teaching lab color palette
+htmltools::tagList(rmarkdown::html_dependency_font_awesome()) # Needed so fa's in footer will show
+```
+
+```{r}
+teaching_df <- read_rds(here("Data/final_df.rds")) # Read in the data
+teaching_lab_df <- read_rds(here("Data/original_df.rds")) # Read original data for column names
+original_columns <- colnames(teaching_lab_df)
+# original_columns # Run if you want to make sure columns match to original data, has to be
+
+# Vector of columns to make factors
+cols <- c("professional_training_session", 
+          "select_your_site_district_parish_or_network", 
+          "select_the_grade_band_s_you_focused_on", 
+          "learning_session_satisfaction",
+          "todays_topic_was_relevant_for_my_role",
+          "designed_to_help_me_learn",
+          "likely_to_apply_46_weeks",
+          "select_the_name_of_your_first_facilitator",
+          "s_he_facilitated_the_content_clearly_12",
+          "did_you_have_a_second_facilitator",
+          "select_the_name_of_your_second_facilitator",
+          "s_he_facilitated_the_content_clearly_16",
+          "s_he_effectively_built_a_community_of_learners_17") 
+
+# Columns based on agreement
+cols_agree <- c("learning_session_satisfaction", 
+                "todays_topic_was_relevant_for_my_role", 
+                "designed_to_help_me_learn", 
+                "likely_to_apply_46_weeks",
+                "s_he_facilitated_the_content_clearly_12",
+                "s_he_facilitated_the_content_clearly_16",
+                "s_he_effectively_built_a_community_of_learners_17",
+                "s_he_effectively_built_a_community_of_learners_13")
+# cat(paste0(paste(paste0("`", colnames(teaching_lab_df), "`"),
+#                          paste0("\'", colnames(teaching_df), "\'"),
+#                          sep = " = ")), sep = ", ")
+# I didn't actually write this out I used the above code to print to console then I copy pasted
+rename_list <- list(`Date for the session` = 'date_for_the_session', `Professional training session` = 'professional_training_session', `Select your site (district, parish, or network).` = 'select_your_site_district_parish_or_network', `Select the best description for your role.` = 'select_the_best_description_for_your_role', `Select the grade-band(s) you focused on.` = 'select_the_grade_band_s_you_focused_on', `I am satisfied with the overall quality of today's professional learning session.` = 'learning_session_satisfaction', `Today's topic was relevant for my role.` = 'todays_topic_was_relevant_for_my_role', `The activities of today's session were well-designed to help me learn.` = 'designed_to_help_me_learn', `What is the learning from this professional learning that you are most excited about trying out?` = 'learning_to_try_out', `How likely are you to apply this learning to your practice in the next 4-6 weeks?` = 'likely_to_apply_46_weeks', `Select the name of your first facilitator.` = 'select_the_name_of_your_first_facilitator', `S/he facilitated the content clearly....12` = 's_he_facilitated_the_content_clearly_12', `S/he effectively built a community of learners....13` = 's_he_effectively_built_a_community_of_learners_13', `Did you have a second facilitator?` = 'did_you_have_a_second_facilitator', `Select the name of your second facilitator.` = 'select_the_name_of_your_second_facilitator', `S/he facilitated the content clearly....16` = 's_he_facilitated_the_content_clearly_16', `S/he effectively built a community of learners....17` = 's_he_effectively_built_a_community_of_learners_17', `Overall, what went well in this professional learning?` = 'overall_what_went_well_in_this_professional_learning', `Which activities best supported your learning?` = 'which_activities_best_supported_your_learning', `What could have improved your experience?` = 'what_could_have_improved_your_experience', `How likely are you to recommend this professional learning to a colleague or friend?` = 'likely_to_recommend_colleague_friend', `Why did you choose this rating?` = 'why_did_you_choose_this_rating', `Do you have additional comments?` = 'do_you_have_additional_comments')
+```
+
+# Correlogram
+
+First, I change all factor variables (anything with response values that can be considered discrete) to values between -2 and 2, then I correlate all variables in a correlogram which visualizes the cross correlations of each square. The results are pretty much what one would expect, high scores in one area are associated with high scores in another area. The only thing to really notice here is that in general people seem to have a lower likelihood to associate the belief that they will apply what they learned in the next 4 to 6 weeks with most other variables, although it is not that much lower. This could be a lower association in that teachers believe they will be more likely to apply their learning when other variables have lower scores, or the inverse, which seems vastly more likely, especially since most scores are very high on average.
+
+```{r}
+factor_df <- map_df(teaching_df[cols_agree], ~ dplyr::recode_factor(., "Strongly agree" = 2,
+                       "Agree" = 1,
+                       "Neither agree nor disagree" = 0,
+                       "Disagree" = -1,
+                       "Strongly disagree" = -2)) %>% # Map across all agree based columns to change to 2,1,0,-1,2
+  dplyr::mutate_all(.funs = as.character) %>% # Have to make factors characters before numeric
+  dplyr::mutate_all(.funs = as.numeric) %>% # Otherwise it changes to 1-5, purely aesthetic preference here
+  bind_cols(teaching_df$likely_to_recommend_colleague_friend) %>% # Add other numeric column from df
+  rename(Recommend = ...9, 
+         CommunityOfLearners = s_he_effectively_built_a_community_of_learners_13,
+         CommunityOfLearners2 = s_he_effectively_built_a_community_of_learners_17,
+         ClearFacilitation2 = s_he_facilitated_the_content_clearly_16,
+         ClearFacilitation = s_he_facilitated_the_content_clearly_12,
+         ApplyNext4to6Weeks = likely_to_apply_46_weeks,
+         DesignedToHelpLearn = designed_to_help_me_learn,
+         RoleRelevance = todays_topic_was_relevant_for_my_role,
+         SS = learning_session_satisfaction) # Rename for correlogram
+GGally::ggcorr(data = factor_df, palette = "RdBu", label = T, label_size = 5, label_color = "white", hjust = 0.8, method = "pairwise") +
+  geom_text(aes(label = "(Session Satisfaction)"), x = 1.8, y = 0.7)# Correlogram
+```
+
+To supplement the results of the correlogram I create a summary statistics table where you can see the number and percentage of each level of agreeing:
+
+```{r}
+gt_summary <- teaching_df[cols_agree] %>%
+  bind_cols(teaching_df$likely_to_recommend_colleague_friend) %>% # Readd column
+  rename(`Recommend to a Colleague or Friend` = ...9) %>% #Rename
+  rename_with( ~ str_to_title(gsub("_", " ", .x, fixed = T))) %>% # Rename to undo janitor name changes for prettier output
+  rename_with( ~ gsub("S H", "S/h", .x)) # regex S H to S/h
+  
+gt_summary %>% 
+  gtsummary::tbl_summary() %>% # Make a summary stats table
+  modify_header(label = "**Group and Subcategories**") %>% # Change first label
+  as_gt() %>% # Convert to gt for color
+  tab_header(title = md("**Likeliness to Agree/Disagree**")) %>%
+  tab_options(
+    table.background.color = "lightcyan",
+    data_row.padding = px(10)
+  )
+```
+
+
+# Textual Data
+
+```{r}
+text_data <- teaching_df %>%
+  select(-cols_agree) %>% # Select textual columns and date, group, etc. Just don't want factors here
+  mutate(likely_to_recommend_colleague_friend = as.character(likely_to_recommend_colleague_friend)) #Make character for textual analysis, just curious if there are any patterns with numbers AND words
+```
+
+I look at the textual data first by simply counting words and seeing what appears most frequently, the first occurrence is NAs which I filter out, along with many other ways to say "no response". After converting the text columns to one word format and filter out stop words, I group by each kind of text column below.
+
+```{r}
+data("stop_words")
+text_additional_comments <- text_data %>%
+  unnest_tokens(word, do_you_have_additional_comments) %>% # Get a column of words
+  mutate(word = tolower(word)) %>% # This isn't necessary because it looks like unnest_tokens does it already, I feel like it hasn't always done that
+  anti_join(stop_words, by = "word") # This is pretty computationally intensive with the longer, not sure if there is a more efficient way to do this.
+# Data frame for question
+text_rating_reason <- text_data %>%
+  unnest_tokens(word, why_did_you_choose_this_rating) %>%
+  anti_join(stop_words, by = "word")
+text_improved_experience <- text_data %>%
+  unnest_tokens(word, what_could_have_improved_your_experience) %>%
+  anti_join(stop_words, by = "word")
+text_activities_learning <- text_data %>%
+  unnest_tokens(word, which_activities_best_supported_your_learning) %>%
+  anti_join(stop_words, by = "word")
+text_professional_learning <- text_data %>%
+  unnest_tokens(word, overall_what_went_well_in_this_professional_learning) %>%
+  anti_join(stop_words, by = "word")
+text_learning_try <- text_data %>%
+  unnest_tokens(word, learning_to_try_out) %>%
+  anti_join(stop_words, by = "word")
+text_colleague_friend <- text_data %>%
+  unnest_tokens(word, likely_to_recommend_colleague_friend) %>%
+  anti_join(stop_words, by = "word")
+```
+
+The most common words for activities that support learning appear to be planning, discussion, and student by a wide margin. This seems pretty reasonable and there isn't much to read into in that regard.
+
+```{r fig.width = 14}
+text_activities_learning %>%
+  # Count occurrence of each word
+  count(word, sort = TRUE) %>%
+  # Filter those with over 200 occurrences
+  dplyr::filter(n > 200 & word != "NA") %>%
+  # New column of words ordered by count
+  mutate(word = reorder(word, n)) %>%
+  # Plot word on x axis, count on y, then flip
+  ggplot(aes(word, n, fill = -n)) + # Have to set fill to -n so it gets darker with number as blues palette is reversed
+  geom_col() +
+  scale_fill_distiller(palette = "Blues") + # Using blues palette to visualize scale of increase in n
+  geom_text(aes(label = n), hjust = -0.14) + # Label the number for more specific visualization
+  labs(x = "", y = "", title = "Most Common Words for Activities that Support Learning") + 
+  coord_flip() +
+  theme(legend.position = "none")
+```
+
+Initially its obvious that most people don't bother to fill out the additional comments part, but the second word count chart here for additional comments indicates there might be some timeliness issues or other need for better partitioning.
+
+```{r fig.width = 14}
+text_additional_comments %>%
+  # Count occurrence of each word
+  count(word, sort = TRUE) %>%
+  # Filter only those with 20 or more
+  dplyr::filter(n > 20) %>%
+  # New column ordered by count
+  mutate(word = reorder(word, n)) %>%
+  # Plot word on x axis, count on y, then flip
+  ggplot(aes(word, n, fill = -n)) +
+  geom_col() +
+  scale_fill_distiller(palette = "Blues") +
+  geom_text(aes(label = n), hjust = -0.14) +
+  labs(x = "", y = "", title = "Most Common Words for Additional Comments") + 
+  coord_flip() +
+  theme(legend.position = "none")
+NAs <- c(NA, "na", "n/a", "no", "nope") # Different ways of saying no comment to filter out
+text_additional_comments %>%
+  count(word, sort = TRUE) %>%
+  dplyr::filter(n > 20, word != NAs) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n, fill = -n)) +
+  geom_col() +
+  scale_fill_distiller(palette = "Blues") +
+  geom_text(aes(label = n), hjust = -0.14) +
+  labs(x = "", y = "", title = "Most Common Words for Additional Comments without NAs") + 
+  coord_flip() +
+  theme(legend.position = "none")
+```
+
+Again it looks like time is a big factor, lessons and planning show up here a lot too.
+
+```{r fig.width = 14}
+text_improved_experience %>%
+  count(word, sort = TRUE) %>%
+  dplyr::filter(n > 100) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n, fill = -n)) +
+  geom_col() +
+  scale_fill_distiller(palette = "Blues") +
+  geom_text(aes(label = n), hjust = -0.14) +
+  labs(x = "", y = "", title = "Most Common Words for What Could Have Improved Experience") + 
+  coord_flip() +
+  theme(legend.position = "none")
+```
+
+A lot of expectable themes show up looking at things to try out, teachers seem to be very interested in "text", "learning strategy", and relating it to "students."
+
+```{r fig.width = 14}
+text_learning_try %>%
+  count(word, sort = TRUE) %>%
+  dplyr::filter(n > 200) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n, fill = -n)) +
+  geom_col() +
+  scale_fill_distiller(palette = "Blues") +
+  geom_text(aes(label = n), hjust = -0.14) +
+  labs(x = "", y = "", title = "Most Common Words for Learning they are Excited to Try Out") + 
+  coord_flip() +
+  theme(legend.position = "none")
+```
+
+"Collaboration" appears to be working well, and "discussions" appears too so group based stuff seems very successful. "Time" makes another appearance as well.
+
+```{r fig.width = 14}
+text_professional_learning %>%
+  count(word, sort = TRUE) %>%
+  dplyr::filter(n > 200) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n, fill = -n)) +
+  geom_col() +
+  scale_fill_distiller(palette = "Blues") +
+  geom_text(aes(label = n), hjust = -0.14) +
+  labs(x = "", y = "", title = "Most Common Words for What Went Well in Professional Learning") + 
+  coord_flip() +
+  theme(legend.position = "none")
+```
+
+The most common words for people who bothered to fill out their reason for the rating was that it was "informative", "helpful", and "knowledgeable" which are all positive. "Time" and "feel" make appearances at the bottom indicating some potential negative feedback.
+
+```{r fig.width = 14}
+text_rating_reason %>%
+  count(word, sort = TRUE) %>%
+  dplyr::filter(n > 200) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n, fill = -n)) +
+  geom_col() +
+  scale_fill_distiller(palette = "Blues") +
+  geom_text(aes(label = n), hjust = -0.14) +
+  labs(x = "", y = "", title = "Most Common Words for Rating Reason") + 
+  coord_flip() +
+  theme(legend.position = "none")
+```
+
+Looks like people are doing a pretty good job in general.
+
+```{r fig.width = 14}
+text_colleague_friend %>%
+  count(word, sort = TRUE) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n, fill = -n)) +
+  geom_col() +
+  scale_fill_distiller(palette = "Blues") +
+  geom_text(aes(label = n), hjust = -0.14) +
+  labs(x = "", y = "", title = "Most Common Ratings") + 
+  coord_flip() +
+  theme(legend.position = "none")
+```
+
+
+# Bigram 
+
+Let's take a look all the responses at once, first as words, then as a bigram, we see what we have been seeing this whole time, more time is a big request:
+
+```{r}
+text_df <- text_data %>%
+  select(-likely_to_recommend_colleague_friend, -select_the_name_of_your_first_facilitator, -select_the_name_of_your_second_facilitator,
+         -did_you_have_a_second_facilitator) %>% # select out numeric data and agree columns
+  pivot_longer(names_to = "response_type", values_to = "text", cols = 6:11) #Put all text responses in one column, and pivot based on response question
+frequency <- text_df %>%
+  dplyr::filter(!(is.na(response_type)) & response_type != "") %>% # No na responses
+  unnest_tokens(word, text) %>% # tidytext to unnest
+  dplyr::filter(!(is.na(word)) & word != "") %>% # No na words
+  count(response_type, word) %>% # Count the data
+  group_by(response_type) %>%
+  mutate(proportion = n / sum(n)) %>% # Percentage
+  ungroup() %>%
+  select(-n) # Create a word frequency table still needs to take into account stopwards
+
+# ggplot(frequency, aes(x = proportion, y = detractor, color = abs(detractor - proportion))) +
+#   geom_abline(color = "gray40", lty = 2) +
+#   geom_jitter(alpha = 0.1, size = 2.5, width = 0.3, height = 0.3) +
+#   geom_text(aes(label = word), check_overlap = TRUE, vjust = 1.5) +
+#   scale_x_log10(labels = percent_format()) +
+#   scale_y_log10(labels = percent_format()) +
+#   scale_color_gradient(limits = c(0, 0.001), low = "darkslategray4", high = "gray75") +
+#   facet_wrap(~segment, ncol = 2) +
+#   theme(legend.position="none") +
+#   labs(y = "Detractors", x = "")
+```
+
+
+```{r fig.width = 14}
+  
+word <- c("i", "i'm", "it", "the", "at", "to", "right", "just", "to", "a", "an",
+          "that", "but", "as", "so", "will", "for", "longer", "i'll", "of", "my",
+          "n", "do", "did", "am", "with", "been", "and", "we") # Relevant stop words
+stopwords <- tibble(word) # Tibble of stop words
+
+# Create a bigram table
+bigrams <- text_df %>%
+  unnest_tokens(bigram, text, token = "ngrams", n = 2) 
+
+# Separate bigrams
+separated <- bigrams %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+
+# Define our own stop words
+word <- c("i", "i'm", "it", "the", "at", "to", "right", "just", "to", "a", "an",
+          "that", "but", "as", "so", "will", "for", "longer", "i'll", "of", "my",
+          "n", "do", "did", "am", "with", "been", "and", "we")
+
+# Create tibble of stop words
+stopwords <- tibble(word)
+
+# Filter out stop-words
+filtered <- separated %>%
+  dplyr::filter(!word1 %in% stopwords$word) %>%
+  dplyr::filter(!word2 %in% stopwords$word)
+
+# Calculate new bigram counts
+bigram_counts <- filtered %>%
+  dplyr::filter(word1 != "NA" & word2 != "NA") %>%
+  count(word1, word2, sort = T)
+
+# Reunite bigrams with counts
+bigrams_united <- filtered %>%
+  unite(bigram, word1, word2, sep = " ") %>%
+  dplyr::filter(bigram != "NA NA") %>%
+  count(bigram, sort = T)
+
+# Graph bigrams with over 100 occurrences
+bigrams_united %>%
+  dplyr::filter(n > 100) %>%
+  mutate(word = reorder(bigram, n)) %>%
+  ggplot(aes(word, n, fill = -n)) +
+  geom_col() +
+  scale_fill_distiller(palette = "Blues") +
+  geom_text(aes(label = n), hjust = -0.14) +
+  labs(x = "", y = "", title = "Most Common Ratings") + 
+  coord_flip() +
+  theme(legend.position = "none")
+```
+
+Of course we have to look at the actual data to interpret what more time means - here I quickly sample 30 random comments from the 232 unique entries that have "more time" in them to see what most say. There's no specific pattern that emerges other than a general request for more time which almost entirely comes under the "What could have improved your experience" question column.
+
+```{r}
+text_df %>%
+  dplyr::filter(str_detect(text, "more time")) %>% # Filter only for "more time"
+  dplyr::relocate(text, .before = date_for_the_session) %>% # Put text in front of dataframe
+  dplyr::relocate(response_type, .after = text) %>% # Put response type after text
+  mutate(Response = row_number()) %>% # Make a row number column for reference
+  relocate(Response, .before = text) %>% # Relocate text
+  rename_with( ~ gsub("S H", "S/h", .x)) %>%
+  slice_sample(n = 30) %>% # Any random 30
+  gt::gt() %>% # Print table
+  cols_width(
+    vars(text) ~ px(400),
+    vars(response_type) ~ px(300),
+    vars(Response) ~ px(90),
+    everything() ~ px(250)
+      ) %>%
+  cols_label(text = "Text") %>%
+  gt::tab_header(title = md("**Responses Involving More Time**")) %>%
+  tab_options(
+    table.background.color = "lightcyan"
+  )
+```
+
+
+# Networking
+
+Now I create a network of the bigrams, I notice there are some weird special characters in the data: ö, ä, ñ appear on the center-right of the Fruchterman-Reingold network, as well as in the upper right. I took a look at the appearances in the data and it seems like some stuff got miscoded on entry in the survey, there's 655 entries that contain ä, and a lot of them look like this: "It‚Äö√Ñ√¥s boring", which is pretty difficult to interpret. The network itself establishes an "alpha" (the level of opaqueness) based on how rare or common the bigram is, and directionality is established by the arrows. Intepreting this is more of an art than a science, but my main takeaway here is that working in small groups is very highly valued based on the central node in the network where many different words appear to connect to "group".
+
+```{r}
+bigram_graph <- bigram_counts %>%
+  dplyr::filter(n > 40) %>%
+  igraph::graph_from_data_frame()
+
+set.seed(2020)
+a <- grid::arrow(type = "closed", length = unit(.1, "inches"))
+ggraph(bigram_graph, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n), show.legend = F, arrow = a, end_cap = circle(.07, 'inches')) +
+  geom_node_point(color = "lightblue", size = 3) +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1) +
+  theme_void()
+```
+
+# Sentiment Analysis with AFINN
+
+I use the AFINN lexicon for sentiment analysis, which gives a numeric sentiment value for each word, with positive or negative numbers indicating the direction of the sentiment.
+
+```{r}
+AFINN <- get_sentiments("afinn")
+not_words <- separated %>%
+  dplyr::filter(word1 == "not") %>%
+  inner_join(AFINN, by = c(word2 = "word")) %>%
+  count(word2, value, sort = T)
+```
+
+I visualize this with a plot that shows words going in the "right" or "wrong" direction based on the sentiment analysis using a bar plot. A lot of the "good" ones here are also not great when taken into context of being preceded by "not". I filter for the top 20 values of contribution which is the count multiplied by the "value" according to AFINN in this chart:
+
+```{r}
+not_words %>%
+  mutate(contribution = n * value) %>%
+  arrange(desc(abs(contribution))) %>%
+  head(20) %>%
+  mutate(word2 = reorder(word2, contribution)) %>%
+  ggplot(aes(n * value, word2, fill = n * value > 0)) +
+  geom_col(show.legend = FALSE) +
+  scale_fill_manual(values = c("#040404", "#04ABEB")) +
+  labs(x = "Sentiment value * number of occurrences",
+       y = "Words preceded by \"not\"")
+```
+
+ With these word combinations it is easy to comb through the data and see where negative comments are made. Below I again print out the relevant text containing "not + word" to demonstrate actual responses I am aggregating:
+ 
+```{r}
+not_detect <- c(paste("not", not_words$word2)) # Get all words with not and make a vector with not in front of them
+text_df %>%
+  dplyr::filter(str_detect(text, paste(not_detect, collapse = '|'))) %>% # Filter only words in not_detect
+  dplyr::relocate(text, .before = date_for_the_session) %>% # Put text in front of dataframe
+  dplyr::relocate(response_type, .after = text) %>% # Put response type after text
+  mutate(Response = row_number()) %>% # Make a row number column for reference
+  rename_with( ~ gsub("S H", "S/h", .x)) %>%
+  relocate(Response, .before = text) %>%
+  gt::gt() %>% # Print table
+  cols_width(
+    vars(text) ~ px(400),
+    vars(response_type) ~ px(300),
+    vars(Response) ~ px(80),
+    everything() ~ px(250)
+      ) %>%
+  cols_label(text = "Text") %>%
+  gt::tab_header(title = md("**Potentially Negative Responses**")) %>%
+  tab_options(
+    table.background.color = "lightcyan"
+  )
+```
+ 
+Response 4 in the table jumps out at me as very detailed and considerate, "The discussions by the instructors were very inspiring because they were genuinely interested in us and dedicated to helping us see the philosophy of this curriculum. However my answer to the question of recommending this course is low because of the covid situation in our world. My answer is not because of the integrity of the course, the suggestions or the "gist" of the course. The instructors were excellent. The philosophy of equity and responsibility is also. But I cannot recommend this course in light of covid-19. I feel teaching EL through distance learning with integrity would not be possible." This response mirrors the few low scores I did see in the likeliness to recommend to a colleague or friend earlier, covid has made it much more difficult to make this style of course worthwhile.
+
+On a positive note all the text relating to "not alone" is great feedback, with 6 people mentioning under "what went well in the session" that they felt they were not alone. Once again I am utterly confused by responses like 38 where special characters seem to have randomly replaced text, it is still legible but quite strange. There's a lot to pull from actually reading comments here, so I'll just mention one more - in responses 15, 18, 19, and 20 all mention the convention center setup as poor, and the chairs as uncomfortable, which is likely outside of anyone at Teaching Lab's control but it seems like a non-ideal setting.
+
+# Word-topic Probabilities
+
+The tidytext package provides a function to extract the per-topic-per-word probabilities called $\beta$ from a LDA_VEM topic model with a number of topics proportional to the response types. Looking at the response probabilities per topic it looks like more time continues to be the biggest theme, and group work again emerges as a success story for best learning activities. "Nothing", has the highest probability response to what could have improved your experience, which is a really good sign!
+
+```{r fig.width = 14}
+text_topics <- text_df %>% 
+  select(response_type, text) %>%
+  rename(topic = response_type) %>%
+  unnest_tokens(word, text, drop = F) %>% # Get word column
+  group_by(topic) %>%
+  count(word, sort = T) %>% # Count
+  ungroup() %>%
+  dplyr::filter(!word %in% stopwords$word & !is.na(word)) # Filter out stop and NA words
+text_dtm <- text_topics %>%
+  cast_dtm(topic, word, n)
+text_lda <- LDA(text_dtm, k = 6, control = list(seed = 2020))
+text_model <- tidy(text_lda, matrix = "beta")
+
+text_terms <- text_model %>%
+  group_by(topic) %>%
+  top_n(5, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+labels <- c(`6` = "learning_to_try_out", `1` = "overall_what_went_well_in_this_professional_learning",
+            `3` = "which_activities_best_supported_your_learning", 
+            `5` = "what_could_have_improved_your_experience", `4` = "why_did_you_choose_this_rating", `2` = "do_you_have_additional_comments")
+
+text_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free", labeller = as_labeller(labels)) +
+  scale_y_reordered() +
+  scale_fill_brewer(col(6))
+```
+
+
