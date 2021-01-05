@@ -1,0 +1,191 @@
+---
+title: "A Sentiment Analysis of Teaching Lab Data"
+author: "Duncan Gates"
+output:
+  revealjs::revealjs_presentation:
+    theme: sky
+    highlight: espresso
+    transition: fade
+    background_transition: zoom
+    center: true
+---
+
+```{r include = F}
+library(tidyverse)
+library(here)
+```
+
+## **Correlogram**
+
+```{r  echo=FALSE, message = F, warning = F, out.width= '60%'}
+teaching_df <- read_rds(here("Data/final_df.rds")) # Read in the data
+cols_agree <- c("learning_session_satisfaction", 
+                "todays_topic_was_relevant_for_my_role", 
+                "designed_to_help_me_learn", 
+                "likely_to_apply_46_weeks",
+                "s_he_facilitated_the_content_clearly_12",
+                "s_he_facilitated_the_content_clearly_16",
+                "s_he_effectively_built_a_community_of_learners_17",
+                "s_he_effectively_built_a_community_of_learners_13")
+factor_df <- map_df(teaching_df[cols_agree], ~ dplyr::recode_factor(., "Strongly agree" = 2,
+                       "Agree" = 1,
+                       "Neither agree nor disagree" = 0,
+                       "Disagree" = -1,
+                       "Strongly disagree" = -2)) %>% # Map across all agree based columns to change to 2,1,0,-1,2
+  dplyr::mutate_all(.funs = as.character) %>% # Have to make factors characters before numeric
+  dplyr::mutate_all(.funs = as.numeric) %>% # Otherwise it changes to 1-5, purely aesthetic preference here
+  bind_cols(teaching_df$likely_to_recommend_colleague_friend) %>% # Add other numeric column from df
+  rename(Recommend = ...9, 
+         `CommunityOfLearners` = s_he_effectively_built_a_community_of_learners_13,
+         CommunityOfLearners2 = s_he_effectively_built_a_community_of_learners_17,
+         ClearFacilitation2 = s_he_facilitated_the_content_clearly_16,
+         ClearFacilitation = s_he_facilitated_the_content_clearly_12,
+         ApplyNext4to6Weeks = likely_to_apply_46_weeks,
+         DesignedToHelpLearn = designed_to_help_me_learn,
+         RoleRelevance = todays_topic_was_relevant_for_my_role,
+         SS = learning_session_satisfaction) # Rename for correlogram
+ggc <- GGally::ggcorr(data = factor_df, palette = "RdBu", label = T, label_size = 5, label_color = "white", hjust = 0.8, method = "pairwise", size = 0)
+lbs <- c("I am satisfied with the overall quality of today's professional learning session.", 
+"Today's topic was relevant for my role.", "The activities of today's session were well-designed to help me learn.", "How likely are you to apply this learning to your practice in the next 4-6 weeks?", 
+"S/he facilitated the content clearly (1)", 
+"S/he effectively built a community of learners (1)", "S/he facilitated the content clearly (2)", 
+"S/he effectively built a community of learners (2)",
+"How likely are you to recommend this professional learning to a colleague or friend?")
+fake_text_df <- tibble(x = seq(ggc), y = seq(ggc), lbs = gsub("([^ ]+ [^ ]+) ", "\\1\n", lbs))
+ggc + geom_text(data = fake_text_df, aes(x, y, label = lbs), size = 1.75, hjust = 0.58, vjust = 0.39, fontface = "bold") # Correlogram with some text adjustments to make things clear
+```
+
+<div style="font-size:70%;" >
+- Responses to "strongly disagree - strongly agree" rated 1-5 then correlated
+
+- All variables positively correlated, likeliness to apply in next 4-6 weeks is slightly less though
+</div>
+
+## **Supporting Learning**
+
+
+```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
+knitr::include_graphics(here("Images/support_learning.png"))
+```
+
+<div style="font-size:70%;" >
+- The most common words for activities that support learning appear to be planning, discussion, and student by a wide margin. This seems pretty reasonable and there isn’t much to read into in that regard.
+</div>
+
+## **Mostly No Additional Comments**
+
+```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
+knitr::include_graphics(here("Images/additional_comments2.png"))
+```
+
+- Initially its obvious that most people don’t bother to fill out the additional comments part of the survey
+
+## **Actual Additional Comments**
+
+
+```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
+knitr::include_graphics(here("Images/additional_comments.png"))
+```
+
+- Indicates there might be some timeliness issues or other need for better time partitioning.
+
+## **What Improved Experience?**
+
+
+```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
+knitr::include_graphics(here("Images/improved_experience.png"))
+```
+
+- Again it looks like time is a big factor, lessons and planning show up here a lot too.
+
+## **Learning Teachers Were Excited to Try Out**
+
+```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
+knitr::include_graphics(here("Images/excited_to_try.png"))
+```
+
+- A lot of expectable themes show up looking at learning to try out, teachers seem to be very interested in “text”, “learning strategy”, and relating it to “students.”
+
+## **What Went Well**
+
+
+```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
+knitr::include_graphics(here("Images/professional_learning.png"))
+```
+
+- “Collaboration” appears to be working well, and “discussions” appears too so group based stuff seems very successful. “Time” makes another appearance as well.
+
+## **Why Were the Given Ratings Given?**
+
+
+```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
+knitr::include_graphics(here("Images/rating_reason.png"))
+```
+
+- The most common words for people who bothered to fill out their reason for the rating was that it was “informative”, “helpful”, and “knowledgeable” which are all positive. “Time” and “feel” make appearances at the bottom indicating some potential negative feedback.
+
+## **Most Common Ratings**
+
+```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
+knitr::include_graphics(here("Images/ratings.png"))
+```
+
+- Looks like people are doing a pretty good job in general!
+
+## **Most Common Two Word Sequences**
+
+```{r  echo=FALSE, fig.cap="A caption", out.width = '60%'}
+knitr::include_graphics(here("Images/bigram.png"))
+```
+
+<div style="font-size:60%;" >
+- The most common bigram by far is "more time", "was very" and "was great" appear indicating people are doing a great job
+
+- "grade level" is an interesting response and requires more investigation
+</div>
+
+## **Sample of Responses with "more time"**
+
+```{r  echo=FALSE, fig.cap="A caption", out.width = '60%'}
+knitr::include_graphics(here("Images/Response Sample.png"))
+```
+
+<div style="font-size:50%;" >
+- Based on reading actual responses it seems like there is a general request for more time
+</div>
+
+## **A Network of the Data**
+
+```{r  echo=FALSE, fig.cap="A caption", out.width = '60%'}
+knitr::include_graphics(here("Images/network.png"))
+```
+
+<div style="font-size:60%;" >
+- Model of most common bigrams based on eigenvector centrality: fancy math way of ranking importance of different connections which are denoted by "nodes" - the blue circles, and arrows to indicate "direction" 
+</div>
+
+## **AFINN Model**
+
+```{r  echo=FALSE, fig.cap="A caption", out.width = '60%'}
+knitr::include_graphics(here("Images/not_preceding.png"))
+```
+
+<div style="font-size:60%;" >
+- AFINN gives a numeric sentiment value for each word, with positive or negative numbers indicating the direction of the sentiment
+
+- Chart is weighted by number of occurrences
+</div>
+
+## **Word Topic Probability Model**
+
+```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
+knitr::include_graphics(here("Images/word_topic_probability.png"))
+```
+
+<div style="font-size:60%;" >
+- Per-topic-per-word probabilities topic model with a number of topics proportional to the response types.
+
+- “Nothing”, has the highest probability response to what could have improved your experience, which is a really good sign!
+</div>
+
+## **Thanks!**

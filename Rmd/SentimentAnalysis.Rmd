@@ -87,7 +87,7 @@ factor_df <- map_df(teaching_df[cols_agree], ~ dplyr::recode_factor(., "Strongly
   dplyr::mutate_all(.funs = as.numeric) %>% # Otherwise it changes to 1-5, purely aesthetic preference here
   bind_cols(teaching_df$likely_to_recommend_colleague_friend) %>% # Add other numeric column from df
   rename(Recommend = ...9, 
-         CommunityOfLearners = s_he_effectively_built_a_community_of_learners_13,
+         `CommunityOfLearners` = s_he_effectively_built_a_community_of_learners_13,
          CommunityOfLearners2 = s_he_effectively_built_a_community_of_learners_17,
          ClearFacilitation2 = s_he_facilitated_the_content_clearly_16,
          ClearFacilitation = s_he_facilitated_the_content_clearly_12,
@@ -95,8 +95,15 @@ factor_df <- map_df(teaching_df[cols_agree], ~ dplyr::recode_factor(., "Strongly
          DesignedToHelpLearn = designed_to_help_me_learn,
          RoleRelevance = todays_topic_was_relevant_for_my_role,
          SS = learning_session_satisfaction) # Rename for correlogram
-GGally::ggcorr(data = factor_df, palette = "RdBu", label = T, label_size = 5, label_color = "white", hjust = 0.8, method = "pairwise") +
-  geom_text(aes(label = "(Session Satisfaction)"), x = 1.8, y = 0.7)# Correlogram
+ggc <- GGally::ggcorr(data = factor_df, palette = "RdBu", label = T, label_size = 5, label_color = "white", hjust = 0.8, method = "pairwise", size = 0)
+lbs <- c("I am satisfied with the overall quality of today's professional learning session.", 
+"Today's topic was relevant for my role.", "The activities of today's session were well-designed to help me learn.", "How likely are you to apply this learning to your practice in the next 4-6 weeks?", 
+"S/he facilitated the content clearly (1)", 
+"S/he effectively built a community of learners (1)", "S/he facilitated the content clearly (2)", 
+"S/he effectively built a community of learners (2)",
+"How likely are you to recommend this professional learning to a colleague or friend?")
+fake_text_df <- tibble(x = seq(ggc), y = seq(ggc), lbs = gsub("([^ ]+ [^ ]+) ", "\\1\n", lbs))
+ggc + geom_text(data = fake_text_df, aes(x, y, label = lbs), size = 1.75, hjust = 0.58, vjust = 0.39, fontface = "bold") # Correlogram with some text adjustments to make things clear
 ```
 
 To supplement the results of the correlogram I create a summary statistics table where you can see the number and percentage of each level of agreeing:
@@ -368,9 +375,10 @@ bigrams_united %>%
   geom_col() +
   scale_fill_distiller(palette = "Blues") +
   geom_text(aes(label = n), hjust = -0.14) +
-  labs(x = "", y = "", title = "Most Common Ratings") + 
+  labs(x = "", y = "", title = "Most Common Bigrams") + 
   coord_flip() +
-  theme(legend.position = "none")
+  theme(legend.position = "none",
+        text = element_text(size = 25))
 ```
 
 Of course we have to look at the actual data to interpret what more time means - here I quickly sample 30 random comments from the 232 unique entries that have "more time" in them to see what most say. There's no specific pattern that emerges other than a general request for more time which almost entirely comes under the "What could have improved your experience" question column.
