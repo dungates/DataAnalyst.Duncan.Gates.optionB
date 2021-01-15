@@ -5,7 +5,7 @@
 </p>
 
 <p align = "center">
-[Link to Presentation](#https://rpubs.com/dungates/teachinglab_presentation)
+<a href = "https://rpubs.com/dungates/teachinglab_presentation">Link to Presentation.</a>
 </p>
 
 This repository consists of parts to address each of the 3 "competencies" from part 2. The Directors of Partnerships will probably be most interested in the output of [FriendorColleague.html](FriendorColleague.html) where I visualize the "scores" of every single training session by each curriculum portfolio: EL, Guidebooks, Illustrative Mathematics (IM), or State-level work. Code is contained in the rmd folder where 5 separate R markdowns are used to obtain, clean, visualize, and edit the data. Four of these R Markdowns are knit to html files which are easy to view and what I intend as the "presentations" from part c. The PieCharter rmd can be knit to a shiny document, or in the PieCharter folder a Shiny App can be run that is also available as a shiny web app [here](https://dungates.shinyapps.io/PieCharter/).
