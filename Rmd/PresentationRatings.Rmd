@@ -1,0 +1,224 @@
+---
+title: "Likeliness to Recommend to a Friend or Colleague"
+output:
+  rmdformats::robobook:
+    self_contained: true # Other options are downcute, material, readthedown, html_clean, html_docco, lockdown, https://github.com/juba/rmdformats
+    thumbnails: false
+    lightbox: true
+    gallery: false
+    highlight: kate # Also can do tango
+    number_sections: false
+    includes:
+      after_body: footer.html
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, 
+                      message = F, 
+                      warning = F, 
+                      fig.align = 'center', 
+                      cache = F, 
+                      tidy = T) # No messages, warnings, code echo, align figures center, cache images, and tidy
+library(tidyverse) # So you don't have to code in base R
+library(hrbrthemes) # For pretty graphing themes
+library(readr) # Reading in rds
+library(here) # Cross network consistency
+library(scales) # For graphing scales
+library(ggrepel) # For text output on graphs
+theme_set(theme_minimal())
+teaching_colors <- c("#04ABEB", "#040404", "#346475", "#324D56") # Teaching Lab Color Palette - derived from logo
+col = grDevices::colorRampPalette(c("#040404", "#04ABEB")) # Color palette maker for blue theme, based on teaching lab color palette
+htmltools::tagList(rmarkdown::html_dependency_font_awesome()) # Needed so fa's in footer will show
+
+teaching_lab_df <- read_rds(here("Data/original_df.rds")) # Read original data for column names
+```
+
+## Comparing Pre-and Post Pandemic Scores
+
+```{r}
+not_state_level <- c("EL|IM|Guidebooks|GuideBooks") # Define those for which we should filter for later
+# Group and then score the data, filter for the pertinent group
+```
+
+## EL
+
+```{r}
+# Group and then score the data, filter for the pertinent group
+grouped_teaching_EL <- teaching_lab_df %>%
+  dplyr::filter(str_detect(`Professional training session`, "EL") == T) %>% # Filter for just EL
+  dplyr::group_by(`Date for the session`) %>%
+  dplyr::mutate(count = length(`Professional training session`),
+           score = sum(`How likely are you to recommend this professional learning to a colleague or friend?`)/count,
+           prepost = case_when(`Date for the session` >= as.Date("2020-03-23") ~ "Post-Pandemic",
+                               `Date for the session` < as.Date("2020-03-23") ~ "Pre-Pandemic")) %>%
+  dplyr::group_by(prepost) %>%
+  dplyr::mutate(mean_score = mean(score, na.rm = T)) %>%
+  dplyr::ungroup() %>%
+  dplyr::distinct(`Date for the session`, .keep_all = T) %>%
+  dplyr::arrange(score) # Arrange for plotting
+
+## Plot by pre and post pandemic by EL training sessions dates.
+ggplot(grouped_teaching_EL, aes(x = `Date for the session`, y = score, fill = 
+                                  factor(prepost, levels = c("Pre-Pandemic", "Post-Pandemic")))) +
+  geom_col() +
+  geom_line(aes(x = `Date for the session`, 
+                y = mean_score,
+                color = factor(prepost, levels = c("Pre-Pandemic", "Post-Pandemic"))),
+            linetype = "dashed") +
+  geom_text(aes(label = paste("Mean:", round(mean_score, 1)),
+                x = as.Date(ifelse(prepost == "Pre-Pandemic",
+                           mean(`Date for the session`[prepost == "Pre-Pandemic"]),
+                           mean(`Date for the session`[prepost == "Post-Pandemic"])), origin),
+                y = mean_score + 0.5,
+                color = factor(prepost, levels = c("Pre-Pandemic", "Post-Pandemic")))) +
+  labs(x = "", y = "Average Score per Session", title = "EL Virtual Bootcamp Scores Before and After the Pandemic") +
+  scale_fill_manual(values = c("#04ABEB", "#324D56")) +
+  scale_color_manual(values = c("#04ABEB", "#324D56")) +
+  scale_y_continuous(limits = c(0, 10)) +
+  scale_x_date(breaks = scales::breaks_pretty(n = 12)) +
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        panel.grid.major = element_blank())
+```
+
+
+## Guidebooks
+
+```{r}
+# There's Guidebooks, and GuideBooks so vector for later filter
+guidebooks <- c("Guidebooks|GuideBooks")
+grouped_teaching_Guidebooks <- teaching_lab_df %>%
+  dplyr::filter(str_detect(`Professional training session`, guidebooks) == T) %>% # Filter for just EL
+  dplyr::group_by(`Date for the session`) %>%
+  dplyr::mutate(count = length(`Professional training session`),
+           score = sum(`How likely are you to recommend this professional learning to a colleague or friend?`)/count,
+           prepost = case_when(`Date for the session` >= as.Date("2020-03-23") ~ "Post-Pandemic",
+                               `Date for the session` < as.Date("2020-03-23") ~ "Pre-Pandemic")) %>%
+  dplyr::group_by(prepost) %>%
+  dplyr::mutate(mean_score = mean(score, na.rm = T)) %>%
+  dplyr::ungroup() %>%
+  dplyr::distinct(`Date for the session`, .keep_all = T) %>%
+  dplyr::arrange(score) # Arrange for plotting
+
+## Plot by pre and post pandemic by EL training sessions dates.
+ggplot(grouped_teaching_Guidebooks, aes(x = `Date for the session`, y = score, fill = 
+                                  factor(prepost, levels = c("Pre-Pandemic", "Post-Pandemic")))) +
+  geom_col() +
+  geom_line(aes(x = `Date for the session`, 
+                y = mean_score,
+                color = factor(prepost, levels = c("Pre-Pandemic", "Post-Pandemic"))),
+            linetype = "dashed") +
+  geom_text(aes(label = paste("Mean:", round(mean_score, 1)),
+                x = as.Date(ifelse(prepost == "Pre-Pandemic",
+                           mean(`Date for the session`[prepost == "Pre-Pandemic"]),
+                           mean(`Date for the session`[prepost == "Post-Pandemic"])), origin),
+                y = mean_score + 0.5,
+                color = factor(prepost, levels = c("Pre-Pandemic", "Post-Pandemic")))) +
+  labs(x = "", y = "Average Score per Session", title = "EL Virtual Bootcamp Scores Before and After the Pandemic") +
+  scale_fill_manual(values = c("#04ABEB", "#324D56")) +
+  scale_color_manual(values = c("#04ABEB", "#324D56")) +
+  scale_y_continuous(limits = c(0, 10)) +
+  scale_x_date(breaks = scales::breaks_pretty(n = 12)) +
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        panel.grid.major = element_blank())
+```
+
+
+## Illustrative Mathematics (IM)
+
+```{r}
+grouped_teaching_IM <- teaching_lab_df %>%
+  dplyr::filter(str_detect(`Professional training session`, "IM") == T) %>% # Filter for just EL
+  dplyr::group_by(`Date for the session`) %>%
+  dplyr::mutate(count = length(`Professional training session`),
+           score = sum(`How likely are you to recommend this professional learning to a colleague or friend?`)/count,
+           prepost = case_when(`Date for the session` >= as.Date("2020-03-23") ~ "Post-Pandemic",
+                               `Date for the session` < as.Date("2020-03-23") ~ "Pre-Pandemic")) %>%
+  dplyr::group_by(prepost) %>%
+  dplyr::mutate(mean_score = mean(score, na.rm = T)) %>%
+  dplyr::ungroup() %>%
+  dplyr::distinct(`Date for the session`, .keep_all = T) %>%
+  dplyr::arrange(score) # Arrange for plotting
+
+## Plot by pre and post pandemic by EL training sessions dates.
+ggplot(grouped_teaching_IM, aes(x = `Date for the session`, y = score, fill = 
+                                  factor(prepost, levels = c("Pre-Pandemic", "Post-Pandemic")))) +
+  geom_col() +
+  geom_line(aes(x = `Date for the session`, 
+                y = mean_score,
+                color = factor(prepost, levels = c("Pre-Pandemic", "Post-Pandemic"))),
+            linetype = "dashed") +
+  geom_text(aes(label = paste("Mean:", round(mean_score, 1)),
+                x = as.Date(ifelse(prepost == "Pre-Pandemic",
+                           mean(`Date for the session`[prepost == "Pre-Pandemic"]),
+                           mean(`Date for the session`[prepost == "Post-Pandemic"])), origin),
+                y = mean_score + 0.5,
+                color = factor(prepost, levels = c("Pre-Pandemic", "Post-Pandemic")))) +
+  labs(x = "", y = "Average Score per Session", title = "EL Virtual Bootcamp Scores Before and After the Pandemic") +
+  scale_fill_manual(values = c("#04ABEB", "#324D56")) +
+  scale_color_manual(values = c("#04ABEB", "#324D56")) +
+  scale_y_continuous(limits = c(0, 10)) +
+  scale_x_date(breaks = scales::breaks_pretty(n = 12)) +
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        panel.grid.major = element_blank())
+```
+
+
+## State-level work
+
+```{r}
+not_state_level <- c("EL|IM|Guidebooks|GuideBooks") # Define those for which we should filter for later
+grouped_teaching_SL <- teaching_lab_df %>%
+  dplyr::filter(!str_detect(`Professional training session`, not_state_level) == T) %>% # Filter for just EL
+  dplyr::group_by(`Date for the session`) %>%
+  dplyr::mutate(count = length(`Professional training session`),
+           score = sum(`How likely are you to recommend this professional learning to a colleague or friend?`)/count,
+           prepost = case_when(`Date for the session` >= as.Date("2020-03-23") ~ "Post-Pandemic",
+                               `Date for the session` < as.Date("2020-03-23") ~ "Pre-Pandemic")) %>%
+  dplyr::group_by(prepost) %>%
+  dplyr::mutate(mean_score = mean(score, na.rm = T)) %>%
+  dplyr::ungroup() %>%
+  dplyr::distinct(`Date for the session`, .keep_all = T) %>%
+  dplyr::arrange(score) # Arrange for plotting
+
+bar_labels <- grouped_teaching_SL$`Professional training session`
+# gsub("((\\S+\\s){2})","\\1\n ", bar_labels) # Doesn't interact well with ggplot
+bar_labels <- c("General: Math", "Innovation Network\nFellowship Meeting 1", 
+"Innovation Network\nFellowship Meeting\n4 Day 2", "General: Math", 
+"Innovation Network\nFellowship Meeting 2", "General: Math", 
+"School Leaders:\nLafayette SL-3", "Innovation Network\nFellowship, Meeting 2", 
+"Innovation Network\nFellowship Meeting\n4 Day 1", "School Leaders:\nLafayette SL-3", 
+"General: Math", "School Leaders:\nLafayette SL-4")
+
+
+## Plot by pre and post pandemic by EL training sessions dates.
+ggplot(grouped_teaching_SL, aes(x = as.factor(`Date for the session`), y = score)) +
+  geom_col(fill = "#04ABEB", color = "#324D56") +
+  geom_text(aes(label = bar_labels),
+            color = "#324D56",
+            position = position_dodge(0.9),
+            vjust = -0.25,
+            size = 2.8,
+            family = "Oswald") +
+  labs(x = "", y = "Average Score per Session", title = "State Level Scores", subtitle = "Exclusively prior to the pandemic") +
+  scale_y_continuous(limits = c(0, 10), breaks = scales::breaks_pretty(n = 10)) +
+  scale_x_discrete() +
+  theme(legend.position = "none",
+        legend.title = element_blank(),
+        plot.title = element_text(hjust = 0.5, family = "Oswald"),
+        plot.subtitle = element_text(hjust = 0.5, family = "Oswald"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        axis.title.y = element_text(family = "Oswald"),
+        axis.text.x = element_text(color = "#324D56", family = "Oswald", 
+                                   margin = unit(c(0, 0, -0.2, 0), "cm"),
+                                   vjust = 10),
+        axis.text.y = element_text(color= "#324D56", family = "Oswald"))
+ggsave(here("Images/PresentationStateLevelScores.png"), height = 2481/300, width = 3324/300, dpi = 300) # Triple zoom size with 300 dpi for best res
+```
+

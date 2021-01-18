@@ -39,7 +39,7 @@ sidebarPanel2 <- function (..., out = NULL, width = 4)
 }
 
 
-# Define UI for application that draws a histogram
+# Define UI for application that draws 
 ui <- fluidPage(
 
   
@@ -112,7 +112,7 @@ server <- function(input, output) {
                       fontface = "bold") + # Add bold text with percentage and variable label
             scale_x_continuous(expand = c(0, 0)) + # Change x so expand is not default and adds no padding so the bars will produce a circle not a donut
             coord_polar(theta = "y", direction = -1) + # Make bars polar
-            scale_fill_manual(values = c(col(nrow(mydata())))) + # custom colors
+            scale_fill_manual(values = c(col(nrow(mydata()))), na.value = "white") + # custom colors
             theme_void() + # Remove all panel elements
             theme(legend.position = "none",
                   plot.title = element_text(hjust = 0.5),
@@ -121,7 +121,8 @@ server <- function(input, output) {
     })
 
     output$tableData <- DT::renderDT({
-        DT::datatable(mydata(), colnames = c(paste(str_to_title(input$data), "Group"), "Number", "Percent"))
+        DT::datatable(mydata(), colnames = c(paste(str_to_title(input$data), "Group"), "Number", "Percent"),
+                      options = list(order = list(list(2, 'desc'))))
     })
     
     output$textData <- renderText({ 
