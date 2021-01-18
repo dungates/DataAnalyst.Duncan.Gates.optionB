@@ -143,29 +143,47 @@ grouped_teaching_IM <- teaching_lab_df %>%
   dplyr::distinct(`Date for the session`, .keep_all = T) %>%
   dplyr::arrange(score) # Arrange for plotting
 
+bar_labels <- dput(grouped_teaching_IM$`Professional training session`)
+bar_labels <- str_replace_all(bar_labels, "IM", "")
+bar_labels <- str_replace_all(bar_labels, "Day", "")
+bar_labels <- str_replace_all(bar_labels, "[:digit:]", "")
+bar_labels <- str_replace_all(bar_labels, ":", "")
+bar_labels <- str_replace_all(bar_labels, ",", "")
+bar_labels <- str_replace_all(bar_labels, "(Bootcamp).*", "\\1")
+bar_labels <- str_replace_all(bar_labels, "(School Leaders).*", "\\1")
+
+
 ## Plot by pre and post pandemic by EL training sessions dates.
-ggplot(grouped_teaching_IM, aes(x = `Date for the session`, y = score, fill = 
-                                  factor(prepost, levels = c("Pre-Pandemic", "Post-Pandemic")))) +
-  geom_col() +
-  geom_line(aes(x = `Date for the session`, 
-                y = mean_score,
-                color = factor(prepost, levels = c("Pre-Pandemic", "Post-Pandemic"))),
-            linetype = "dashed") +
-  geom_text(aes(label = paste("Mean:", round(mean_score, 1)),
-                x = as.Date(ifelse(prepost == "Pre-Pandemic",
-                           mean(`Date for the session`[prepost == "Pre-Pandemic"]),
-                           mean(`Date for the session`[prepost == "Post-Pandemic"])), origin),
-                y = mean_score + 0.5,
-                color = factor(prepost, levels = c("Pre-Pandemic", "Post-Pandemic")))) +
-  labs(x = "", y = "Average Score per Session", title = "EL Virtual Bootcamp Scores Before and After the Pandemic") +
-  scale_fill_manual(values = c("#04ABEB", "#324D56")) +
-  scale_color_manual(values = c("#04ABEB", "#324D56")) +
-  scale_y_continuous(limits = c(0, 10)) +
-  scale_x_date(breaks = scales::breaks_pretty(n = 12)) +
-  theme(legend.position = "bottom",
-        legend.title = element_blank(),
-        plot.title = element_text(hjust = 0.5),
-        panel.grid.major = element_blank())
+ggplot(grouped_teaching_IM, aes(x = as.factor(`Date for the session`), y = score, fill = 
+                                    factor(prepost, levels = c("Pre-Pandemic", "Post-Pandemic")))) +
+    geom_col(color = "#324D56") +
+    geom_line(aes(x = as.factor(`Date for the session`), 
+                  y = mean_score,
+                  color = factor(prepost, levels = c("Pre-Pandemic", "Post-Pandemic"))),
+              linetype = "dashed") +
+    geom_text(aes(label = bar_labels),
+              color = "#324D56",
+              position = position_dodge(0.9),
+              vjust = -0.25,
+              size = 2.8,
+              family = "Oswald") +
+    labs(x = "", y = "Average Score per Session", title = "Illustrative Mathematics Scores Before and After the Pandemic") +
+    scale_fill_manual(values = c("#04ABEB", "#324D56")) +
+    scale_color_manual(values = c("#04ABEB", "#324D56")) +
+    scale_y_continuous(limits = c(0, 10)) +
+    scale_x_discrete() +
+    theme(legend.position = "bottom",
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5, family = "Oswald"),
+          plot.subtitle = element_text(hjust = 0.5, family = "Oswald"),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          axis.title.y = element_text(family = "Oswald"),
+          axis.text.x = element_text(color = "#324D56", family = "Oswald", 
+                                     margin = unit(c(0, 0, -0.2, 0), "cm"),
+                                     hjust = 2,
+                                     angle = 90),
+          axis.text.y = element_text(color= "#324D56", family = "Oswald"))
 ```
 
 
