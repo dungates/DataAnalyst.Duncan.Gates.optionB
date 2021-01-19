@@ -439,10 +439,11 @@ post_responses <- sorted_teaching_df %>%
   filter(prepost == "Post-Pandemic") %>% 
   select(`How likely are you to recommend this professional learning to a colleague or friend?`, 
          `Why did you choose this rating?`, 
-         `Do you have additional comments?`,
+         `What could have improved your experience?`,
          `Professional training session`,
-         `Date for the session`) %>% 
-  drop_na() %>%
+         `Date for the session`,
+         `Select the name of your first facilitator.`) %>% 
+  drop_na(`How likely are you to recommend this professional learning to a colleague or friend?`) %>%
   mutate(Date = format(`Date for the session`, '%b, %d %Y')) %>%
   select(-`Date for the session`) %>%
   dplyr::arrange(`How likely are you to recommend this professional learning to a colleague or friend?`)
@@ -453,16 +454,39 @@ post_responses %>%
     subtitle = md("Sorted *Worst-Best*")
   ) %>%
   cols_width(
-    vars(`How likely are you to recommend this professional learning to a colleague or friend?`) ~ px(105),
+    vars(`How likely are you to recommend this professional learning to a colleague or friend?`) ~ px(110),
          everything() ~ px(250)
   ) %>%
   cols_label(
-    `How likely are you to recommend this professional learning to a colleague or friend?` = "Likeliness to Recommend"
+    `How likely are you to recommend this professional learning to a colleague or friend?` = md("**Likeliness to Recommend**"),
+    `Why did you choose this rating?` = md("**Why did you choose this rating?**"), 
+    `What could have improved your experience?` = md("**What could have improved your experience?**"),
+    `Professional training session` = md("**Professional training session**"),
+    Date = md("**Date**"),
+    `Select the name of your first facilitator.` = md("**Facilitator**")
   ) %>%
   cols_align(
     align = "center",
     columns = vars(`How likely are you to recommend this professional learning to a colleague or friend?`)
-  )
+  ) %>%
+  data_color(columns = vars(`How likely are you to recommend this professional learning to a colleague or friend?`),
+             colors = scales::col_numeric(
+               palette = col(nrow(post_responses))
+               %>% as.character(),
+             domain = NULL)
+  ) %>%
+  tab_style(
+    style = list(
+      cell_fill(color = "skyblue")),
+      locations = cells_body(
+        columns = vars(`Why did you choose this rating?`, 
+         `What could have improved your experience?`,
+         `Professional training session`,
+         `Date`,
+         `Select the name of your first facilitator.`),
+        rows = `Professional training session` == "Guidebooks CM-6"
+      )
+    )
   
 ```
 
