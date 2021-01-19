@@ -26,6 +26,8 @@ library(here) # Cross network consistency
 library(scales) # For graphing scales
 library(ggrepel) # For text output on graphs
 library(gt) # For tables
+library(lubridate) # For dates
+library(ggiraph) # For interactivity
 theme_set(theme_minimal())
 teaching_colors <- c("#04ABEB", "#040404", "#346475", "#324D56") # Teaching Lab Color Palette - derived from logo
 col = grDevices::colorRampPalette(c("#040404", "#04ABEB")) # Color palette maker for blue theme, based on teaching lab color palette
@@ -103,7 +105,9 @@ na_dates <- teaching_lab_df %>% dplyr::filter(str_detect(`Professional training 
                                   is.na(`How likely are you to recommend this professional learning to a colleague or friend?`)) %>%
     distinct(`Date for the session`)
 
-na_results <- teaching_lab_df %>% filter(na_dates$`Date for the session` == `Date for the session`) # Looks like its entirely as a result of Louisiana State Content Leader Training 
+
+
+na_results <- teaching_lab_df %>% dplyr::filter(na_dates$`Date for the session` == `Date for the session`) # Looks like its entirely as a result of Louisiana State Content Leader Training 
 
 # Simply too many here to plot text
 # bar_labels <- dput(grouped_teaching_Guidebooks$`Professional training session`)
@@ -122,6 +126,15 @@ ggplot(grouped_teaching_Guidebooks, aes(x = fct_reorder(as.factor(`Date for the 
     geom_segment(aes(x = "2020-01-05", xend = "2020-12-04", y = -0.2, yend = -0.2),
                  arrow = grid::arrow(length = unit(0.3, "cm"),
                                                        ends = "both"), color = "gray20", size = 1.5) +
+    geom_segment(aes(x = "2019-08-24", xend = "2019-06-24", y = -0.4, yend = -0.01),
+                 arrow = grid::arrow(length = unit(0.07, "in"),
+                                                       ends = "last"), color = "gray20", size = 1.5) +
+    geom_segment(aes(x = "2019-08-24", xend = "2019-09-25", y = -0.4, yend = -0.01),
+                 arrow = grid::arrow(length = unit(0.07, "in"),
+                                                       ends = "last"), color = "gray20", size = 1.5) +
+    geom_segment(aes(x = "2019-08-24", xend = "2019-11-06", y = -0.4, yend = -0.01),
+                 arrow = grid::arrow(length = unit(0.07, "in"),
+                                                       ends = "last"), color = "gray20", size = 1.5) +
     geom_text(aes(x = "2019-09-19", y = -0.4, label = "2019"), color = "gray80") +
     geom_text(aes(x = "2020-03-02", y = -0.4, label = "2020"), color = "gray20") +
     labs(x = "", y = "Average Score per Session", title = "Guidebooks' Scores Before and After the Pandemic",
@@ -143,8 +156,8 @@ ggplot(grouped_teaching_Guidebooks, aes(x = fct_reorder(as.factor(`Date for the 
           axis.title.y = element_text(family = "Oswald"),
           axis.text.y = element_text(color= "#324D56", family = "Oswald"),
           legend.text = element_text(family = "Oswald"),
-          plot.caption = element_text(family = "Oswald", vjust = 25),
-          plot.margin = unit(c(0.1,0.1,-0.5,0.1), "cm"))
+          plot.caption = element_text(family = "Oswald", vjust = 25, hjust = 0.2),
+          plot.margin = unit(c(0.1,0.1,-0.8,0.1), "cm"))
 ```
 
 
@@ -243,9 +256,11 @@ bar_labels <- c("General: Math", "Innovation Network\nFellowship Meeting 1",
 "Innovation Network\nFellowship Meeting\n4 Day 1", "School Leaders:\nLafayette SL-3", 
 "General: Math", "School Leaders:\nLafayette SL-4")
 
-
+facilitators <- grouped_teaching_SL %>% select(`Select the name of your first facilitator.`,
+                                               `Select the name of your second facilitator.`)
 ## Plot by pre and post pandemic by EL training sessions dates.
-ggplot(grouped_teaching_SL, aes(x = as.factor(`Date for the session`), y = score)) +
+ggplot(grouped_teaching_SL, aes(x = fct_reorder(as.factor(format(`Date for the session`, '%b %d, %Y')), `Date for the session`), 
+                                y = score)) +
   geom_col(fill = "#04ABEB", color = "#324D56") +
   geom_text(aes(label = bar_labels),
             color = "#324D56",
@@ -354,7 +369,7 @@ illustrative_arrow <- tibble(prepost = factor(c("Post-Pandemic")),
 
 # Guidebooks Label
 guidebooks_label <- tibble(prepost = factor(c("Post-Pandemic")), 
-                   label = c(glue::glue("Guidebooks scores remain strong, averaging\nonly {round(sorted_teaching_df %>% filter(pro_grouping == 'Guidebooks') %>% distinct(grouped_means) %>% summarise(grouped_means[1]-grouped_means[2]), 2)} less on average.")),
+                   label = c(glue::glue("Guidebooks scores remain strong, averaging\nonly {round(sorted_teaching_df %>% dplyr::filter(pro_grouping == 'Guidebooks') %>% distinct(grouped_means) %>% summarise(grouped_means[1]-grouped_means[2]), 2)} less on average.")),
                    pro_grouping = "Illustrative Mathematics", 
                    `How likely are you to recommend this professional learning to a colleague or friend?` = 9)
 guidebooks_arrow <- tibble(prepost = factor(c("Post-Pandemic")),
@@ -365,7 +380,7 @@ guidebooks_arrow <- tibble(prepost = factor(c("Post-Pandemic")),
 
 # EL Label
 el_label <- tibble(prepost = factor(c("Pre-Pandemic")), 
-                   label = c(glue::glue("EL had the highest Pre-Pandemic scores,\nwith an average of {round(sorted_teaching_df %>% filter(grouped_means == max(grouped_means)) %>% distinct(grouped_means), 2)}.")),
+                   label = c(glue::glue("EL had the highest Pre-Pandemic scores,\nwith an average of {round(sorted_teaching_df %>% dplyr::filter(grouped_means == max(grouped_means)) %>% distinct(grouped_means), 2)}.")),
                    pro_grouping = "EL", 
                    `How likely are you to recommend this professional learning to a colleague or friend?` = 9)
 el_arrow <- tibble(prepost = factor(c("Pre-Pandemic")),
@@ -375,8 +390,8 @@ el_arrow <- tibble(prepost = factor(c("Pre-Pandemic")),
                              yend = 9.25)
 
 average_label <- tibble(prepost = factor(c("Pre-Pandemic", "Post-Pandemic")), 
-                   label = c(glue::glue("Pre-Pandemic average: {round(sorted_teaching_df %>% distinct(mean_score) %>% filter(mean_score == max(mean_score)), 2)}"),
-                             glue::glue("Post-Pandemic average: {round(sorted_teaching_df %>% distinct(mean_score) %>% filter(mean_score == min(mean_score)), 2)}")),
+                   label = c(glue::glue("Pre-Pandemic average: {round(sorted_teaching_df %>% distinct(mean_score) %>% dplyr::filter(mean_score == max(mean_score)), 2)}"),
+                             glue::glue("Post-Pandemic average: {round(sorted_teaching_df %>% distinct(mean_score) %>% dplyr::filter(mean_score == min(mean_score)), 2)}")),
                    pro_grouping = "Illustrative Mathematics", 
                    `How likely are you to recommend this professional learning to a colleague or friend?` = c(9.6, 8.4))
 average_arrow <- tibble(prepost = factor(c("Pre-Pandemic", "Post-Pandemic")), 
