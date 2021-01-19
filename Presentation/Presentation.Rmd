@@ -20,6 +20,17 @@ library(shiny)
 
 <iframe height="800" width="100%" frameborder="no" src="https://dungates.shinyapps.io/PieCharter/"> </iframe>
 
+## **Pause When the Pandemic Starts**
+
+```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
+knitr::include_graphics(here("Images/PresentationAllScoresDate.png"))
+```
+
+## **Scores By Learning Session Type
+
+```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
+knitr::include_graphics(here("Images/PresentationPandemicScores.png"))
+```
 
 ## **Supporting Learning**
 
