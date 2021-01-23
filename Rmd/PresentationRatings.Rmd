@@ -81,6 +81,7 @@ ggplot(grouped_teaching_df, aes(x = `Date for the session`,
           legend.text = element_text(family = "Oswald"),
           plot.caption = element_text(family = "Oswald", vjust = 25, hjust = 0.2),
           plot.margin = unit(c(0.1,0.1,-0.8,0.1), "cm"))
+
 ggsave(here("Images/PresentationAllScoresDate.png"), width = 14, height = 9)
 ```
 
@@ -361,6 +362,9 @@ sorted_teaching_df <- teaching_lab_df %>%
   mutate(mean_score = mean(`How likely are you to recommend this professional learning to a colleague or friend?`)) %>%
   ungroup()
 
+# Axis colors 
+axis_colors <- rev(c("#040404", "#324D56", "#346475", "#04ABEB"))
+
 # Make the graph aesthetics, theme, and limits
 g <- ggplot(sorted_teaching_df, aes(
               x = fct_rev(pro_grouping), 
@@ -382,14 +386,14 @@ g <- ggplot(sorted_teaching_df, aes(
         axis.text.x = element_text(color = "#324D56", family = "Oswald", 
                                    margin = unit(c(0, 0, -0.2, 0), "cm"),
                                    vjust = 10),
-        axis.text.y = element_text(color= "#324D56", family = "Oswald"),
+        axis.text.y = element_text(color= axis_colors, family = "Oswald"),
         strip.text = element_text(family = "Oswald", size = 10),
         legend.text = element_text(family = "Oswald"),
         axis.ticks.x = element_line(size = 3, color = "#324D56", linetype = 2),
         axis.ticks.length.x = unit(0.2, "cm"))
 
 
-# Graph with geoms applied
+# Graph with geoms applied for baselayer test
 g + 
   geom_segment(
     aes(x = fct_rev(pro_grouping), xend = fct_rev(pro_grouping),
@@ -460,7 +464,12 @@ average_arrow <- tibble(prepost = factor(c("Pre-Pandemic", "Post-Pandemic")),
     show.legend = F,
     size = 0.8
   ) +
-  geom_jitter(size = 3, aes(alpha = prepost), height = 0.15, width = 0.28) + # Height changes width here since coord_flip already happened
+  geom_jitter_interactive(size = 3, aes(alpha = prepost,
+                            tooltip = paste(`Select your site (district, parish, or network).`, 
+                                            `Select the best description for your role.`,
+                                            `What could have improved your experience?`,
+                                            sep = "\n")), 
+              height = 0.15, width = 0.28) + # Height changes width here since coord_flip already happened
   scale_alpha_manual(values = c(0.6, 0.2)) + # Manually change the alpha since they need to be set for different n
   stat_summary(fun = mean, geom = "point", size = 5) + # Add mean summary point
   geom_hline(aes(yintercept = mean_score), color = "gray70") +
@@ -497,8 +506,22 @@ average_arrow <- tibble(prepost = factor(c("Pre-Pandemic", "Post-Pandemic")),
              size = 0.4,
              color = "gray70",
              curvature = 0))
+tooltip_css <- "font-family:'Oswald';color:white;"
+html_plot <- girafe(ggobj = g_arrow, fonts = list(sans = "Oswald"),
+       options = list(opts_tooltip(offx = 15, offy = 15, use_cursor_pos = T, use_fill = T, css = tooltip_css),
+                      opts_sizing(rescale = T),
+                      opts_hover_inv(css = "opacity:0.1;"),
+                      opts_toolbar(saveaspng = F)),
+       width_svg = 16.833, height_svg = 10.0233
+       ) %>%# Real size
+  girafe_options(.,
+                 htmlwidgets::sizingPolicy(padding = "0px",
+                                           defaultWidth = "90%", defaultHeight = "90%"))
+htmlwidgets::saveWidget(html_plot, file=here("Images/PresentationInteractive.html"))
 ggsave(here("Images/PresentationPandemicScores.png"), width = 5050.179/300, height = 3007/300, dpi = 300)
 ```
+
+## Table of responses
 
 ```{r}
 post_responses <- sorted_teaching_df %>% 

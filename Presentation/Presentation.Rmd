@@ -1,5 +1,5 @@
 ---
-title: "A Sentiment Analysis of Teaching Lab Data"
+title: "Mid-Pandemic Sentiment According to Teaching Lab Data"
 author: "Duncan Gates"
 output:
   revealjs::revealjs_presentation:
@@ -8,6 +8,7 @@ output:
     transition: fade
     background_transition: zoom
     center: true
+    # css: styles.css
 ---
 
 ```{r include = F}
@@ -16,9 +17,9 @@ library(here)
 library(shiny)
 ```
 
-## **Capturing the Categorical Data**
+## {data-background-iframe="https://dungates.shinyapps.io/PieCharter/"}
 
-<iframe height="800" width="100%" frameborder="no" src="https://dungates.shinyapps.io/PieCharter/"> </iframe>
+<!-- <iframe height="800" width="100%" frameborder="no" src="https://dungates.shinyapps.io/PieCharter/"> </iframe> -->
 
 ## **Pause When the Pandemic Starts**
 
@@ -26,14 +27,12 @@ library(shiny)
 knitr::include_graphics(here("Images/PresentationAllScoresDate.png"))
 ```
 
-## **Scores By Learning Session Type
+<!-- ## {data-background-size="contain" data-background-image="/Users/dunk/DataAnalyst.Duncan.Gates.optionB/Images/PresentationPandemicScores.png"} -->
 
-```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
-knitr::include_graphics(here("Images/PresentationPandemicScores.png"))
-```
+## {data-background-iframe="https://duncangates.me/PresentationInteractive.html" data-background-interactive=true}
+
 
 ## **Supporting Learning**
-
 
 ```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
 knitr::include_graphics(here("Images/support_learning.png"))
