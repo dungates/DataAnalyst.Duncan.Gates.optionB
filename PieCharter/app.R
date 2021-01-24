@@ -5,11 +5,15 @@
 # Find out more about building applications with Shiny here:
 #
 #    http://shiny.rstudio.com/
-#
-# https://github.com/Appsilon/semantic.dashboard
-# https://appsilon.com/semantic-dashboard-new-open-source-r-shiny-package/
+
+# MAKE DATE SLIDER REACTIVE, TRY PUTTING IN ONE OBSERVE EVENT
+
+# MAKE DATA TABLE WIDTHS EXPAND
+
+# MAKE ALL FONT OSWALD
 
 library(tidyverse)
+library(lubridate)
 library(here)
 library(scales) # For graphing scales
 library(shiny)
@@ -17,7 +21,9 @@ library(shinyWidgets)
 library(DT)
 library(grDevices)
 library(shinyjs)
-library(shinydashboard)
+library(semantic.dashboard)
+# library(shiny.semantic)
+# library(shinyalert)
 extrafont::loadfonts()
 
 teaching_df <- read_rds(here("Data/original_df.rds")) # Read in the data
@@ -60,9 +66,10 @@ newcols <- str_to_title(c("Professional training session",
 teaching_df <- teaching_df %>% 
   mutate_if(is.character, funs(replace_na(., "No Response"))) %>%
   mutate_if(is.numeric, funs(replace_na(., "No Response"))) %>%
-  rename_with(~ newcols[which(oldcols == .x)], .cols = oldcols)
+  rename_with(~ newcols[which(oldcols == .x)], .cols = oldcols) %>%
+  mutate(`Date for the session` = lubridate::ymd(`Date for the session`))
 
-col = grDevices::colorRampPalette(c("#040404", "#04ABEB", "#FFFFFF")) # Color ramp, includes white because ugly otherwise
+col = grDevices::colorRampPalette(c("#040404", "#04ABEB", "#00FFFF")) # Color ramp, includes white because ugly otherwise
 teaching_colors <- c("#04ABEB", "#040404", "#346475", "#324D56") # Teaching Lab Color Palette - derived from logo
 
 
@@ -74,58 +81,78 @@ teaching_colors <- c("#04ABEB", "#040404", "#346475", "#324D56") # Teaching Lab 
 #     )
 # }
 
-# header <- dashboardHeader(
-#   title = "Teaching Lab Data"
-# ) # Figure out how to set header
-
 
 # Define UI for application that draws 
-ui <- dashboardPage(
-  tags$head(tags$style(
-    HTML('
-         #sidebar {
-            background-color: #355c7d;
-        }
-
-        body, label, input, button, select, h2 { 
-          font-family: "Oswald";
-        }')
-  )),
+ui <- dashboard_page(
   
+  # tags$head(tags$style(HTML('* {font-family: "Oswald"};'))),
+  
+  theme = "darkly",
+  
+  # No longer needed with theme
   # Background color
-    setBackgroundColor(
-      color = c("#F7FBFF", "#2171B5"),
-      gradient = "linear",
-      direction = "bottom"
-    ),
+    # setBackgroundColor(
+    #   color = c("#F7FBFF", "#2171B5"),
+    #   gradient = "linear",
+    #   direction = "bottom"
+    # ),
     
   
     # Application title
-    dashboardHeader(title = "Interactive Data Visualization",
-                    titleWidth = 400),
-
+    dashboardHeader(title = "Interactive Data Visualization", 
+                    titleWidth = "wide",
+                    color = "black", 
+                    inverted = T),
     # Sidebar with a series of selections for variables
     dashboardSidebar(
-        sidebarMenu(
-          menuItem("Inputs", icon = icon("bar-chart-o"),
-            selectInput("data", 
-                        newcols, 
-                        width = '600px', 
-            selected = NULL,
-                        label = h3("Select Variable:"))#, # Basic Shiny Input Take
-            # textOutput("textData"),
-            # width = 2
+      side = "left", size = "wide",
+      sidebar_menu(
+        menu_item("", icon = icon("home"),
+          selectInput("data", 
+                      newcols,
+                      selected = NULL,
+                      label = h3("Select Variable:", style = "font-family:'Oswald';"),
+                      width = 400), # Basic Shiny Input Take
+          # textOutput("textData"),
+          dateRangeInput("date",
+                         label = h3("Select Date Range:", style = "font-family:'Oswald';"),
+                      start = min(as.Date(teaching_df$`Date for the session`), na.rm = T),
+                      end = max(as.Date(teaching_df$`Date for the session`), na.rm = T),
+                      min = min(as.Date(teaching_df$`Date for the session`), na.rm = T),
+                      max = max(as.Date(teaching_df$`Date for the session`), na.rm = T),
+                      format = "yyyy-mm-dd"),
+          shiny::sliderInput("date2",
+                      label = h3("Select Date Range:", style = "font-family:'Oswald';"),
+                      value = c(min(as.Date(teaching_df$`Date for the session`), na.rm = T),
+                                max(as.Date(teaching_df$`Date for the session`), na.rm = T)),
+                      min = min(as.Date(teaching_df$`Date for the session`), na.rm = T),
+                      max = max(as.Date(teaching_df$`Date for the session`), na.rm = T))
         )
       )
     ),
 
-        # Show a plot of the generated distribution
+    # Show a plot the pie charts in one row, tables in another
     dashboardBody(
-      fluidRow(splitLayout(cellWidths = 750,
+      # # Custom css for Oswald font
+      # tags$head(tags$style(HTML('
+      # .main-header .logo {
+      #   font-family: "Oswald";
+      #   font-weight: bold;
+      #   font-size = 24px;
+      # }
+      # .skin-blue .main-header .logo {
+      #     background-color: #3c8dbc;
+      #   }
+      #   .skin-blue .main-header .logo:hover {
+      #     background-color: #3c8dbc;
+      #   }'))),
+      fluidRow(split_layout(cell_widths = 750,
                            plotOutput("piePlotNA", width = "100%"),
                            plotOutput("piePlot", width = "100%")
                            )),
-       fluidRow(splitLayout(cellWidths = 750,
+       fluidRow(split_layout(cell_widths = 750,
+                            cell_args = "padding: 6px;",
+                            style = "border: 1px solid silver;",
                             DTOutput("tableData2"),
                             DTOutput("tableData")
                             ))
@@ -133,11 +160,42 @@ ui <- dashboardPage(
     #)
 )
 
-# Define server logic required to draw a histogram
-server <- function(input, output) {
-    
+# Define server logic 
+server <- function(input, output, session) {
+  
+  # Update the dateRangeInput if start date changes
+  observeEvent(input$date[1], {
+    req(input$date)
+    end_date = input$date[2]
+    # If end date is earlier than start date, update the end date to be the same as the new start date
+    if (input$date[2] < input$date[1]) {
+      end_date = input$date[1]
+    }
+    updateDateRangeInput(session,"date", start=input$date[1], end=end_date, min=input$date[1] )
+  })
+  
+  # Make dates the same
+  # observeEvent(input$date, {
+  #   req(input$date)
+  #   # if (input$date2[1] != input$date[1] | input$date2[2] != input$date[2]) {
+  #     updateDateRangeInput(session,
+  #                          "date",
+  #                          start = input$date2[1],
+  #                          end = input$date2[2])
+  #   # }
+  # })
+  
+  # observeEvent(input$date2, {
+  #   # if (input$date[1] != input$date2[1] | input$date2[2] != input$date[2]) {
+  #     updateSliderInput(session,
+  #                       "date2",
+  #                       value = c(input$date[1], input$date[2]))
+  #   # }
+  # })
+  
     mydata <- reactive({
         teaching_df %>%
+            dplyr::filter(between(`Date for the session`, input$date[1], input$date[2])) %>%
             dplyr::group_by(get(input$data)) %>% # Group by input variable
             dplyr::summarise(n = n()) %>% # Get count of variable
             ungroup() %>% # Ungroup
@@ -146,6 +204,7 @@ server <- function(input, output) {
     
     mydata2 <- reactive({
       teaching_df %>%
+        dplyr::filter(between(`Date for the session`, input$date[1], input$date[2])) %>%
         dplyr::group_by(get(input$data)) %>% # Group by input variable
         dplyr::summarise(n = n()) %>% # Get count of variable
         ungroup() %>% # Ungroup
@@ -186,7 +245,7 @@ server <- function(input, output) {
                   )
         cowplot::ggdraw(g) #+
           # theme(plot.background = element_rect(fill = "#355c7d", color = NA))
-    }, height = 400, width = 750, res = 75)
+    }, height = 400, width = 700, res = 80)
     
     output$piePlotNA <- renderPlot({
       g2 <- ggplot2::ggplot(mydata2(), aes(x = 0, y = n, fill = reorder(`get(input$data)`, n))) + #Pie chart input, ordered by n
@@ -209,7 +268,7 @@ server <- function(input, output) {
                   family = "Oswald") + # Add bold text with percentage and variable label
         scale_x_continuous(expand = c(0, 0)) + # Change x so expand is not default and adds no padding so the bars will produce a circle not a donut
         coord_polar(theta = "y", direction = -1) + # Make bars polar
-        scale_fill_manual(values = c(rev(col(nrow(mydata2())))), na.value = "white") + # custom colors
+        scale_fill_manual(values = c(rev(col(nrow(mydata2()))))) + # custom colors
         scale_color_manual(values = c(rev(col(nrow(mydata2()))))) +
         theme_void() + # Remove all panel elements
         ggpubr::theme_transparent() +
@@ -221,7 +280,7 @@ server <- function(input, output) {
               )
       cowplot::ggdraw(g2) #+
         # theme(plot.background = element_rect(fill = "#355c7d", color = NA))
-    }, height = 533.3333, width = 1000, res = 100)
+    }, height = 400, width = 700, res = 80)
 
     output$tableData <- DT::renderDT({
         DT::datatable(mydata(), 
@@ -252,3 +311,7 @@ server <- function(input, output) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
+
+
+
+
