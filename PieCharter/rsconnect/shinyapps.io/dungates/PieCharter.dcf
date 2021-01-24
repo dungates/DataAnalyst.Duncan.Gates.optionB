@@ -5,8 +5,8 @@ account: dungates
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 3436995
-bundleId: 4128398
+bundleId: 4138069
 url: https://dungates.shinyapps.io/PieCharter/
-when: 1611294046.55756
+when: 1611531591.41024
 asMultiple: FALSE
 asStatic: FALSE

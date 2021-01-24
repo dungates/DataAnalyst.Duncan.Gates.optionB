@@ -6,10 +6,6 @@
 #
 #    http://shiny.rstudio.com/
 
-# MAKE DATE SLIDER REACTIVE, TRY PUTTING IN ONE OBSERVE EVENT
-
-# MAKE DATA TABLE WIDTHS EXPAND
-
 # MAKE ALL FONT OSWALD
 
 library(tidyverse)
@@ -22,9 +18,19 @@ library(DT)
 library(grDevices)
 library(shinyjs)
 library(semantic.dashboard)
-# library(shiny.semantic)
+library(shiny.semantic)
+library(Cairo)
+library(showtext)
+font_add_google(name = "Oswald", family = "Oswald")
+showtext_auto()
+showtext_opts(dpi = 112)
 # library(shinyalert)
-extrafont::loadfonts()
+# extrafont::font_import(pattern = "Oswald", prompt = F)
+# extrafont::loadfonts()
+# dir.create('~/.fonts')
+# file.copy("/Users/dunk/DataAnalyst.Duncan.Gates.optionB/PieCharter/www/Oswald-VariableFont_wght.ttf",
+#           "~/.fonts")
+# system('fc-cache -f ~/.fonts')
 
 teaching_df <- read_rds(here("Data/original_df.rds")) # Read in the data
 # Relevant columns
@@ -69,7 +75,7 @@ teaching_df <- teaching_df %>%
   rename_with(~ newcols[which(oldcols == .x)], .cols = oldcols) %>%
   mutate(`Date for the session` = lubridate::ymd(`Date for the session`))
 
-col = grDevices::colorRampPalette(c("#040404", "#04ABEB", "#00FFFF")) # Color ramp, includes white because ugly otherwise
+col = grDevices::colorRampPalette(c("#040404", "#04ABEB", "#9FDBF5")) # Color ramp, includes white because ugly otherwise
 teaching_colors <- c("#04ABEB", "#040404", "#346475", "#324D56") # Teaching Lab Color Palette - derived from logo
 
 
@@ -85,9 +91,11 @@ teaching_colors <- c("#04ABEB", "#040404", "#346475", "#324D56") # Teaching Lab 
 # Define UI for application that draws 
 ui <- dashboard_page(
   
-  # tags$head(tags$style(HTML('* {font-family: "Oswald"};'))),
+  # tags$head(includeCSS("www/styles.css")), # Messes with shiny.semantic
   
-  theme = "darkly",
+  # tags$head(tags$style(HTML('* {font-family: "Oswald"};'))), # Messes with shiny.semantic
+  
+  theme = "solar", # Best theme so far, need to see if Oswald can be integrated throughout app
   
   # No longer needed with theme
   # Background color
@@ -99,20 +107,23 @@ ui <- dashboard_page(
     
   
     # Application title
-    dashboardHeader(title = "Interactive Data Visualization", 
+    dashboardHeader(title = h2("Interactive Data Visualization", style = "font-family:'Oswald'"), 
                     titleWidth = "wide",
                     color = "black", 
                     inverted = T),
     # Sidebar with a series of selections for variables
     dashboardSidebar(
-      side = "left", size = "wide",
+      side = "left", size = "wide", closable = T,
       sidebar_menu(
-        menu_item("", icon = icon("home"),
+        # tags$head(tags$style("input.date {font-family: Oswald;}")), # Trying to change widget font
+        tags$head(includeCSS("www/styles.css")), # Oswald CSS
+        menu_item("", icon = icon("home"), 
           selectInput("data", 
                       newcols,
                       selected = NULL,
-                      label = h3("Select Variable:", style = "font-family:'Oswald';"),
+                      label = h3("Select Variable of Interest:", style = "font-family:'Oswald';"),
                       width = 400), # Basic Shiny Input Take
+          br(),
           # textOutput("textData"),
           dateRangeInput("date",
                          label = h3("Select Date Range:", style = "font-family:'Oswald';"),
@@ -120,19 +131,25 @@ ui <- dashboard_page(
                       end = max(as.Date(teaching_df$`Date for the session`), na.rm = T),
                       min = min(as.Date(teaching_df$`Date for the session`), na.rm = T),
                       max = max(as.Date(teaching_df$`Date for the session`), na.rm = T),
-                      format = "yyyy-mm-dd"),
+                      format = "yyyy-mm-dd",
+                      width = "100%",
+                      tags$head(includeCSS("www/styles.css"))),
+          br(),
           shiny::sliderInput("date2",
                       label = h3("Select Date Range:", style = "font-family:'Oswald';"),
                       value = c(min(as.Date(teaching_df$`Date for the session`), na.rm = T),
                                 max(as.Date(teaching_df$`Date for the session`), na.rm = T)),
                       min = min(as.Date(teaching_df$`Date for the session`), na.rm = T),
-                      max = max(as.Date(teaching_df$`Date for the session`), na.rm = T))
+                      max = max(as.Date(teaching_df$`Date for the session`), na.rm = T),
+                      timeFormat = "%b %d, %Y")
         )
       )
     ),
 
     # Show a plot the pie charts in one row, tables in another
     dashboardBody(
+      tags$head(includeCSS("www/styles.css"),
+                tags$style("@import url('//fonts.googleapis.com/css?family=Oswald');")),
       # # Custom css for Oswald font
       # tags$head(tags$style(HTML('
       # .main-header .logo {
@@ -146,16 +163,17 @@ ui <- dashboard_page(
       #   .skin-blue .main-header .logo:hover {
       #     background-color: #3c8dbc;
       #   }'))),
-      fluidRow(split_layout(cell_widths = 750,
-                           plotOutput("piePlotNA", width = "100%"),
-                           plotOutput("piePlot", width = "100%")
-                           )),
-       fluidRow(split_layout(cell_widths = 750,
-                            cell_args = "padding: 6px;",
-                            style = "border: 1px solid silver;",
-                            DTOutput("tableData2"),
-                            DTOutput("tableData")
-                            ))
+      # tags$style(HTML('body {font-family:"Oswald";')),
+      fluidRow(column(8,
+        # cell_widths = 750,
+                         plotOutput("piePlotNA", width = "100%")),
+               column(8, plotOutput("piePlot", width = "100%"))),
+       fluidRow(column(8,
+         # cell_widths = 750,
+         #                    cell_args = "padding: 6px;",
+         #                    style = "border: 1px solid silver;",
+                          DTOutput("tableData2")),
+                column(8, DTOutput("tableData")))
       )
     #)
 )
@@ -171,37 +189,51 @@ server <- function(input, output, session) {
     if (input$date[2] < input$date[1]) {
       end_date = input$date[1]
     }
-    updateDateRangeInput(session,"date", start=input$date[1], end=end_date, min=input$date[1] )
+    updateDateRangeInput(session,
+                         "date", 
+                         start = input$date[1], 
+                         end = end_date, 
+                         min=min(teaching_df$`Date for the session`, na.rm = T))
   })
   
   # Make dates the same
-  # observeEvent(input$date, {
-  #   req(input$date)
-  #   # if (input$date2[1] != input$date[1] | input$date2[2] != input$date[2]) {
-  #     updateDateRangeInput(session,
-  #                          "date",
-  #                          start = input$date2[1],
-  #                          end = input$date2[2])
-  #   # }
-  # })
   
-  # observeEvent(input$date2, {
-  #   # if (input$date[1] != input$date2[1] | input$date2[2] != input$date[2]) {
-  #     updateSliderInput(session,
-  #                       "date2",
-  #                       value = c(input$date[1], input$date[2]))
-  #   # }
-  # })
+  ## Avoid chain reaction
+  reactdelay <- 1
+  change_slider <- reactiveVal(Sys.time())
+  change_daterange <- reactiveVal(Sys.time())
   
+  # Check date input 
+  observeEvent(input$date2, {
+    # req(input$date)
+    if (difftime(Sys.time(), change_slider()) > reactdelay) {
+      change_daterange(Sys.time())
+      updateDateRangeInput(session,
+                           "date",
+                           start = input$date2[1],
+                           end = input$date2[2])
+    }
+  })
+  
+  observeEvent(input$date, {
+    if (difftime(Sys.time(), change_daterange()) > reactdelay) {
+      updateSliderInput(session,
+                        "date2",
+                        value = c(input$date[1], input$date[2]))
+    }
+  })
+  # Data for second pie chart and table (rightmost)
     mydata <- reactive({
         teaching_df %>%
             dplyr::filter(between(`Date for the session`, input$date[1], input$date[2])) %>%
             dplyr::group_by(get(input$data)) %>% # Group by input variable
             dplyr::summarise(n = n()) %>% # Get count of variable
             ungroup() %>% # Ungroup
-            dplyr::mutate(percent = round(100 * (n / sum(n)), 2)) # Make a percent column
+            dplyr::mutate(percent = round(100 * (n / sum(n)), 2)) %>%# Make a percent column
+            dplyr::relocate(percent, .before = n) %>%
+            dplyr::filter(if (input$data == "What Is The Best Description For Your Role?") n > 5 else n > 0)
     })
-    
+    # Data for first pie chart and table (leftmost)
     mydata2 <- reactive({
       teaching_df %>%
         dplyr::filter(between(`Date for the session`, input$date[1], input$date[2])) %>%
@@ -209,19 +241,25 @@ server <- function(input, output, session) {
         dplyr::summarise(n = n()) %>% # Get count of variable
         ungroup() %>% # Ungroup
         dplyr::filter(`get(input$data)` != "No Response") %>%# Filter out non-responses
-        dplyr::mutate(percent = round(100 * (n / sum(n)), 2)) # Make a percent column without non-responses
+        dplyr::mutate(percent = round(100 * (n / sum(n)), 2)) %>%# Make a percent column without non-responses
+        dplyr::relocate(percent, .before = n) %>%
+        dplyr::filter(if (input$data == "What Is The Best Description For Your Role?") n > 5 else n > 0) # Filter out many responses with few observations for just one column selection
     })
+    
+    options(shiny.usecairo = T)
     
     output$piePlot <- renderPlot({
         g <- ggplot2::ggplot(mydata(), aes(x = 0, y = n, fill = reorder(`get(input$data)`, n))) + #Pie chart input, ordered by n
             labs(fill = "Type", x = NULL, y = NULL,
                  title = paste(str_to_title(as.character(input$data))),
                  subtitle = "Variables with greater than 5% occurrence are labelled.") +
-            geom_bar(stat = "identity", width = 0.5) + # Using bar columns put in polar coordinates later
+            geom_bar(stat = "identity", width = 0.5, color = "gray10", size = ifelse(nrow(mydata2()) > 10,
+                                                                                     0.1,
+                                                                                     0.6)) + # Using bar columns put in polar coordinates later
             geom_text(aes(label = ifelse(percent > 5,
                                          paste0(percent, "%\n", ifelse(
                                            str_length(`get(input$data)`) > 10,
-                                           gsub('(.{9,}?)\\s', '\\1\n\\2', `get(input$data)`),
+                                           gsub('(.{9,}?)\\s', '\\1\n\\2', `get(input$data)`), # If character length greater than 10 add a new line at 9th character
                                            `get(input$data)`)
                                          ),
                                          paste("")),
@@ -236,11 +274,12 @@ server <- function(input, output, session) {
             scale_fill_manual(values = c(rev(col(nrow(mydata())))), na.value = "white") + # custom colors
             scale_color_manual(values = c(rev(col(nrow(mydata()))))) +
             theme_void() + # Remove all panel elements
-            ggpubr::theme_transparent() +
+            # ggpubr::theme_transparent() +
             theme(legend.position = "none",
                   plot.title = element_text(hjust = 0.5, family = "Oswald"),
                   plot.subtitle = element_text(hjust = 0.5, family = "Oswald", 
-                                               margin = margin(t = 5, unit = "pt"))#,
+                                               margin = margin(t = 5, unit = "pt")),
+                  text = element_text(family = "Oswald")#,
                   # plot.background = element_rect(fill = "#355c7d", color = "#355c7d")
                   )
         cowplot::ggdraw(g) #+
@@ -252,7 +291,9 @@ server <- function(input, output, session) {
         labs(fill = "Type", x = NULL, y = NULL,
              title = paste(str_to_title(as.character(input$data))),
              subtitle = "Variables with greater than 5% occurrence are labelled, and non-responses removed.") +
-        geom_bar(stat = "identity", width = 0.5) + # Using bar columns put in polar coordinates later
+        geom_bar(stat = "identity", width = 0.5, color = "gray10", size = ifelse(nrow(mydata2()) > 10,
+                                                                                 0.1,
+                                                                                 0.6)) + # Using bar columns put in polar coordinates later
         geom_text(aes(label = ifelse(percent > 5,
                                      paste0(percent, "%\n", ifelse(
                                        str_length(`get(input$data)`) > 10,
@@ -270,38 +311,72 @@ server <- function(input, output, session) {
         coord_polar(theta = "y", direction = -1) + # Make bars polar
         scale_fill_manual(values = c(rev(col(nrow(mydata2()))))) + # custom colors
         scale_color_manual(values = c(rev(col(nrow(mydata2()))))) +
-        theme_void() + # Remove all panel elements
-        ggpubr::theme_transparent() +
+        theme_void() +
+        # ggpubr::theme_transparent() +
         theme(legend.position = "none",
               plot.title = element_text(hjust = 0.5, family = "Oswald"),
               plot.subtitle = element_text(hjust = 0.5, family = "Oswald", 
-                                           margin = margin(t = 5, unit = "pt"))#,
+                                           margin = margin(t = 5, unit = "pt")),
+              text = element_text(family = "Oswald")#,
               # plot.background = element_rect(fill = "#355c7d", color = "#355c7d")
               )
       cowplot::ggdraw(g2) #+
+      # ggsave("Images/g2.png", dpi = 300, type = "cairo")
         # theme(plot.background = element_rect(fill = "#355c7d", color = NA))
     }, height = 400, width = 700, res = 80)
+    
+    # output$piePlotImage <-
+    #   renderImage({
+    #     outfile <- here("Images/g2.png")
+    #     list(src = outfile,
+    #          contentType = 'image/png',
+    #          width = 700,
+    #          height = 400)
+    #   }, deleteFile = F)
 
     output$tableData <- DT::renderDT({
         DT::datatable(mydata(), 
-                      colnames = c(paste(str_to_title(input$data)), "Number", "Percent"), # Column names
+                      colnames = c(paste(str_to_title(input$data)), "Percent", "Number"), # Column names
                       extensions = "Buttons", # Add buttons
                       options = list(order = list(list(2, 'desc')), # Sort by second column which is number
                                      dom = 'Bfrtip', # Buttons source
-                                     buttons = c('copy', 'csv', 'excel', 'pdf', 'print')), # Buttons spec
+                                     buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+                                     initComplete = DT::JS(
+                                       "function(settings, json) {",
+                                       "$('body').css({'font-family': 'Oswald'});
+                                       $(this.api().table().header()).css({'background-color': '#346475', 'color': '#fff'});",
+                                       "}")), # Buttons spec
                       rownames = F, # No rownames
-                      class = 'cell-border stripe hover') # Table prettyifying, cell borders that are striped and highlight on hover
+                      class = 'cell-border stripe hover') %>%# Table prettyifying, cell borders that are striped and highlight on hover
+        formatString("percent", suffix = "%") %>%
+        formatStyle('n',
+                    background = styleColorBar(c(0, mydata2()$n), "#04ABEB"),
+                    backgroundSize = '95% 50%',
+                    backgroundRepeat = 'no-repeat',
+                    backgroundPosition = 'right') # Add percent bars
     })
     
     output$tableData2 <- DT::renderDT({
       DT::datatable(mydata2(), 
-                    colnames = c(paste(str_to_title(input$data)), "Number", "Percent"), # Column names
+                    colnames = c(paste(str_to_title(input$data)), "Percent", "Number"), # Column names
                     extensions = "Buttons", # Add buttons
                     options = list(order = list(list(2, 'desc')), # Sort by second column which is number
                                    dom = 'Bfrtip', # Buttons source
-                                   buttons = c('copy', 'csv', 'excel', 'pdf', 'print')), # Buttons spec
+                                   buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+                                   initComplete = DT::JS(
+                                     "function(settings, json) {",
+                                     "$('body').css({'font-family': 'Oswald'});
+                                     $(this.api().table().header()).css({'background-color': '#346475', 'color': '#fff'});",
+                                     "}"
+                                   )), # Buttons spec
                     rownames = F, # No rownames
-                    class = 'cell-border stripe hover') # Table prettyifying, cell borders that are striped and highlight on hover
+                    class = 'cell-border stripe hover') %>%# Table prettyifying, cell borders that are striped and highlight on hover
+        formatString("percent", suffix = "%") %>%
+        formatStyle('n',
+                    background = styleColorBar(c(0, mydata2()$n), "#04ABEB"),
+                    backgroundSize = '95% 50%',
+                    backgroundRepeat = 'no-repeat',
+                    backgroundPosition = 'right') # Add percent bars
     })
     
     output$textData <- renderText({ 
