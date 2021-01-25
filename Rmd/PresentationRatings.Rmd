@@ -28,13 +28,40 @@ library(ggrepel) # For text output on graphs
 library(gt) # For tables
 library(lubridate) # For dates
 library(ggiraph) # For interactivity
-theme_set(theme_minimal())
 teaching_colors <- c("#04ABEB", "#040404", "#346475", "#324D56") # Teaching Lab Color Palette - derived from logo
 col = grDevices::colorRampPalette(c("#040404", "#04ABEB")) # Color palette maker for blue theme, based on teaching lab color palette
 htmltools::tagList(rmarkdown::html_dependency_font_awesome()) # Needed so fa's in footer will show
 
 teaching_lab_df <- read_rds(here("Data/original_df.rds")) # Read original data for column names
+
+# There's Guidebooks, and GuideBooks so vector for later filter
+guidebooks <- c("Guidebooks|GuideBooks")
+
+not_state_level <- c("EL|IM|Guidebooks|GuideBooks") # Define those for which we should filter for later
 ```
+
+```{r}
+theme_tl <- function(){
+  
+  font <- "Oswald" # Assign font up front
+  
+  theme_minimal() %+replace%
+  theme(legend.position = c(0.95,1),
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5, font),
+          plot.subtitle = element_text(hjust = 0.5, font),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          axis.text.x = element_text(color = "#324D56", font,
+                                     margin = unit(c(0, 0, -0.3, 0), "cm"), vjust = 28),
+          axis.title.y = element_text(font),
+          axis.text.y = element_text(color= "#324D56", font),
+          legend.text = element_text(font),
+          plot.caption = element_text(font, vjust = 25, hjust = 0.2),
+          plot.margin = unit(c(0.1,0.1,-0.8,0.1), "cm"))
+}
+```
+
 
 # Comparing Pre-and Post Pandemic Scores
 
@@ -48,22 +75,29 @@ grouped_teaching_df <- teaching_lab_df %>%
   dplyr::group_by(`Date for the session`) %>%
   dplyr::mutate(count = length(`Professional training session`),
            score = sum(`How likely are you to recommend this professional learning to a colleague or friend?`, na.rm = T)/count,
-           prepost = case_when(`Date for the session` >= as.Date("2020-04-01") ~ "Post-Pandemic",
-                               `Date for the session` < as.Date("2020-04-01") ~ "Pre-Pandemic")) %>%
+           prepost = case_when(`Date for the session` >= as.Date("2020-04-01") ~ "Post-Pandemic Average: 7.67",
+                               `Date for the session` < as.Date("2020-04-01") ~ "Pre-Pandemic Average: 8.48")) %>%
   dplyr::group_by(prepost) %>%
   dplyr::mutate(mean_score = mean(score, na.rm = T)) %>%
   dplyr::ungroup() %>%
   dplyr::distinct(`Date for the session`, .keep_all = T) %>%
   dplyr::arrange(score) %>%# Arrange for plotting
-  drop_na(`Date for the session`)
+  drop_na(`Date for the session`) %>%
+  mutate(grouping = case_when(str_detect(`Professional training session`, "EL") == T ~ "EL",
+                              str_detect(`Professional training session`, guidebooks) == T ~ "Guidebooks",
+                              str_detect(`Professional training session`, "IM") == T ~ "IM",
+                              !str_detect(`Professional training session`, not_state_level) == T ~ "State-Level"))
   
+# Date x scale
 ggplot(grouped_teaching_df, aes(x = `Date for the session`,
                                 y = score, 
-                                fill = factor(prepost, levels = c("Pre-Pandemic", "Post-Pandemic")),
-                                color = factor(prepost, levels = c("Pre-Pandemic", "Post-Pandemic"))
+                                fill = factor(prepost, levels = c("Pre-Pandemic Average: 8.48", "Post-Pandemic Average: 7.67")),
+                                color = factor(prepost, levels = c("Pre-Pandemic Average: 8.48", "Post-Pandemic Average: 7.67")),
+                                # alpha = factor(grouping, levels = c("Guidebooks", "EL", "IM", "State-Level"))
                                     )) +
-  geom_col(color = ifelse(grouped_teaching_df$prepost == "Pre-Pandemic", "#324D56", "black")) +
-  labs(x = "", y = "Average Score per Session", title = "EL Virtual Bootcamp Scores Before and After the Pandemic") +
+  geom_col() +
+    geom_hline(color = "black", yintercept = 0) +
+  labs(x = "", y = "Average Score per Session", title = "Likeliness to Recommend to a Friend or Colleague Before and After the Pandemic") +
     scale_fill_manual(values = c("#04ABEB", "#324D56")) +
     scale_color_manual(values = c("#04ABEB", "#324D56")) +
     scale_y_continuous(limits = c(-0.4, 10), breaks = scales::breaks_pretty(n = 10)) +
@@ -73,16 +107,65 @@ ggplot(grouped_teaching_df, aes(x = `Date for the session`,
           plot.title = element_text(hjust = 0.5, family = "Oswald"),
           plot.subtitle = element_text(hjust = 0.5, family = "Oswald"),
           panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
           panel.grid.minor.y = element_blank(),
           axis.text.x = element_text(color = "#324D56", family = "Oswald",
-                                     margin = unit(c(0, 0, -0.3, 0), "cm"), vjust = 28),
+                                     margin = unit(c(0, 0, -0.3, 0), "cm"), vjust = 13),
           axis.title.y = element_text(family = "Oswald"),
           axis.text.y = element_text(color= "#324D56", family = "Oswald"),
           legend.text = element_text(family = "Oswald"),
           plot.caption = element_text(family = "Oswald", vjust = 25, hjust = 0.2),
-          plot.margin = unit(c(0.1,0.1,-0.8,0.1), "cm"))
+          plot.margin = unit(c(0.1,-0.6,-0.8,0.1), "cm"))
 
-ggsave(here("Images/PresentationAllScoresDate.png"), width = 14, height = 9)
+ggsave(here("Images/PresentationAllScoresDate.png"), width = 16, height = 9)
+
+# Factored x scale
+grouped_teaching_df %>% filter(score != 0) %>%
+  ggplot(aes(x = factor(`Date for the session`),
+                                y = score, 
+                                fill = factor(prepost, levels = c("Pre-Pandemic Average: 8.48", "Post-Pandemic Average: 7.67")),
+                                # alpha = factor(grouping, levels = c("Guidebooks", "EL", "IM", "State-Level"))
+                                    )) +
+    geom_col(color = "black") +
+    geom_segment(aes(x = "2019-06-05", xend = "2020-01-05", y = -0.01, yend = -0.01),
+                 arrow = grid::arrow(length = unit(0.3, "cm"),
+                                     ends = "both",
+                                     type = "open"), color = "gray80", size = 1.5) +
+    geom_segment(aes(x = "2020-01-05", xend = "2020-12-05", y = -0.01, yend = -0.01),
+                 arrow = grid::arrow(length = unit(0.3, "cm"),
+                                     ends = "both",
+                                     type = "open"), color = "gray5", size = 1.5) +
+    # geom_segment(aes(x = "2019-08-24", xend = "2019-06-24", y = -0.4, yend = -0.01),
+    #              arrow = grid::arrow(length = unit(0.07, "in"),
+    #                                                    ends = "last"), color = "gray20", size = 1.5) +
+    # geom_segment(aes(x = "2019-08-24", xend = "2019-09-25", y = -0.4, yend = -0.01),
+    #              arrow = grid::arrow(length = unit(0.07, "in"),
+    #                                                    ends = "last"), color = "gray20", size = 1.5) +
+    # geom_segment(aes(x = "2019-08-24", xend = "2019-11-06", y = -0.4, yend = -0.01),
+    #              arrow = grid::arrow(length = unit(0.07, "in"),
+    #                                                    ends = "last"), color = "gray20", size = 1.5) +
+    geom_text(aes(x = "2019-09-24", y = -0.15, label = "2019"), color = "gray80", size = 8, family = "Oswald") +
+    geom_text(aes(x = "2020-03-02", y = -0.15, label = "2020"), color = "gray5", size = 8, family = "Oswald") +
+  labs(x = "", y = "Average Score per Session",
+       title = "Likeliness to Recommend to a Friend or Colleague Before and After the Pandemic") +
+    scale_fill_manual(values = c("#04ABEB", "#324D56")) +
+    scale_color_manual(values = c("#04ABEB", "#324D56")) +
+    scale_y_continuous(limits = c(-0.4, 10), breaks = scales::breaks_pretty(n = 10)) +
+    scale_x_discrete() +
+    theme(legend.position = c(0.95,1),
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5, family = "Oswald", size = 18),
+          plot.subtitle = element_text(hjust = 0.5, family = "Oswald"),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          axis.text.x = element_blank(),
+          axis.title.y = element_text(family = "Oswald", size = 13),
+          axis.text.y = element_text(color= "#324D56", family = "Oswald", size = 11),
+          legend.text = element_text(family = "Oswald", size = 12),
+          # plot.caption = element_text(family = "Oswald", vjust = 15, hjust = 0.1),
+          plot.margin = unit(c(0.1,0.1,-2.5,0.1), "cm"))
+ggsave(here("Images/PresentationAllScoresFactor.png"), width = 2200/300*3.5, height = 1250/300*3.5)
 ```
 
 
@@ -134,8 +217,6 @@ ggsave(here("Images/PresentationELScores.png"), width = 14, height = 9)
 ## Guidebooks
 
 ```{r}
-# There's Guidebooks, and GuideBooks so vector for later filter
-guidebooks <- c("Guidebooks|GuideBooks")
 grouped_teaching_Guidebooks <- teaching_lab_df %>%
   dplyr::filter(str_detect(`Professional training session`, guidebooks) == T) %>% # Filter for just EL
   dplyr::group_by(`Date for the session`) %>%
@@ -285,7 +366,6 @@ ggsave(here("Images/PresentationIMScores.png"), width = 14, height = 9)
 ## State-level work
 
 ```{r}
-not_state_level <- c("EL|IM|Guidebooks|GuideBooks") # Define those for which we should filter for later
 grouped_teaching_SL <- teaching_lab_df %>%
   dplyr::filter(!str_detect(`Professional training session`, not_state_level) == T) %>% # Filter for just EL
   dplyr::group_by(`Date for the session`) %>%

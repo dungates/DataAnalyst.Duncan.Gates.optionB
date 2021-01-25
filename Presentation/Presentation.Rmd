@@ -8,6 +8,9 @@ output:
     background_transition: zoom
     center: true
     css: styles.css
+    self_contained: false
+    reveal_options:
+      previewLinks: true
 ---
 
 ```{r include = F}
@@ -20,7 +23,7 @@ library(here)
 
 <!-- <iframe height="800" width="100%" frameborder="no" src="https://dungates.shinyapps.io/PieCharter/"> </iframe> -->
 
-## {data-background-image="/Users/dunk/Teaching Lab/Images/PresentationAllScoresDate.png" data-background-size="contain"}
+## {data-background-image="/Users/dunk/DataAnalyst.Duncan.Gates.optionB/Images/PresentationAllScoresFactor.png" data-background-size="contain"}
 
 <!-- ## {data-background-size="contain" data-background-image="/Users/dunk/DataAnalyst.Duncan.Gates.optionB/Images/PresentationPandemicScores.png"} -->
 

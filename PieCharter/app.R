@@ -6,7 +6,7 @@
 #
 #    http://shiny.rstudio.com/
 
-# MAKE ALL FONT OSWALD
+# IDEA: MAKE PIE CHART HIGHLIGHT SECTION WHEN SELECTED IN DATA TABLE
 
 library(tidyverse)
 library(lubridate)
@@ -21,9 +21,9 @@ library(semantic.dashboard)
 library(shiny.semantic)
 library(Cairo)
 library(showtext)
-font_add_google(name = "Oswald", family = "Oswald")
+font_add_google(name = "Oswald", family = "Oswald") # Adds font for ggplot
 showtext_auto()
-showtext_opts(dpi = 112)
+showtext_opts(dpi = 150) # Changes ggplot font size
 # library(shinyalert)
 # extrafont::font_import(pattern = "Oswald", prompt = F)
 # extrafont::loadfonts()
@@ -78,6 +78,8 @@ teaching_df <- teaching_df %>%
 col = grDevices::colorRampPalette(c("#040404", "#04ABEB", "#9FDBF5")) # Color ramp, includes white because ugly otherwise
 teaching_colors <- c("#04ABEB", "#040404", "#346475", "#324D56") # Teaching Lab Color Palette - derived from logo
 
+# colordates <- unique(c(na.omit(teaching_df$`Date for the session`))) # Need to figure out how to highlight available dates
+
 
 # sidebarPanel2 <- function (..., out = NULL, width = 4) 
 # {
@@ -90,6 +92,8 @@ teaching_colors <- c("#04ABEB", "#040404", "#346475", "#324D56") # Teaching Lab 
 
 # Define UI for application that draws 
 ui <- dashboard_page(
+  
+  title = "Teaching Lab Data Visualization",
   
   # tags$head(includeCSS("www/styles.css")), # Messes with shiny.semantic
   
@@ -117,16 +121,17 @@ ui <- dashboard_page(
       sidebar_menu(
         # tags$head(tags$style("input.date {font-family: Oswald;}")), # Trying to change widget font
         tags$head(includeCSS("www/styles.css")), # Oswald CSS
-        menu_item("", icon = icon("home"), 
+        menu_item("", icon = shiny::icon("chart-pie"), 
           selectInput("data", 
                       newcols,
                       selected = NULL,
                       label = h3("Select Variable of Interest:", style = "font-family:'Oswald';"),
                       width = 400), # Basic Shiny Input Take
-          br(),
+        ),
+        menu_item("", icon = shiny::icon("calendar"),
           # textOutput("textData"),
           dateRangeInput("date",
-                         label = h3("Select Date Range:", style = "font-family:'Oswald';"),
+                         label = h3("Calendar Select:", style = "font-family:'Oswald';"),
                       start = min(as.Date(teaching_df$`Date for the session`), na.rm = T),
                       end = max(as.Date(teaching_df$`Date for the session`), na.rm = T),
                       min = min(as.Date(teaching_df$`Date for the session`), na.rm = T),
@@ -136,18 +141,23 @@ ui <- dashboard_page(
                       tags$head(includeCSS("www/styles.css"))),
           br(),
           shiny::sliderInput("date2",
-                      label = h3("Select Date Range:", style = "font-family:'Oswald';"),
+                      label = h3("Date Slider:", style = "font-family:'Oswald';margin-bottom:6px;"),
                       value = c(min(as.Date(teaching_df$`Date for the session`), na.rm = T),
                                 max(as.Date(teaching_df$`Date for the session`), na.rm = T)),
                       min = min(as.Date(teaching_df$`Date for the session`), na.rm = T),
                       max = max(as.Date(teaching_df$`Date for the session`), na.rm = T),
-                      timeFormat = "%b %d, %Y")
-        )
+                      timeFormat = "%b %d, %Y"),
+          br()
+        ),
+        menu_item("", icon = shiny::icon("globe"),
+                  tags$a(href="https://dungates.shinyapps.io/PieCharter", "Link to Site!")
+                  )
       )
     ),
 
     # Show a plot the pie charts in one row, tables in another
     dashboardBody(
+      tags$head(tags$link(rel = "shortcut icon", href = "favicon.ico")), # Favicon add
       tags$head(includeCSS("www/styles.css"),
                 tags$style("@import url('//fonts.googleapis.com/css?family=Oswald');")),
       # # Custom css for Oswald font
@@ -181,22 +191,7 @@ ui <- dashboard_page(
 # Define server logic 
 server <- function(input, output, session) {
   
-  # Update the dateRangeInput if start date changes
-  observeEvent(input$date[1], {
-    req(input$date)
-    end_date = input$date[2]
-    # If end date is earlier than start date, update the end date to be the same as the new start date
-    if (input$date[2] < input$date[1]) {
-      end_date = input$date[1]
-    }
-    updateDateRangeInput(session,
-                         "date", 
-                         start = input$date[1], 
-                         end = end_date, 
-                         min=min(teaching_df$`Date for the session`, na.rm = T))
-  })
-  
-  # Make dates the same
+  # Make dates stay the same
   
   ## Avoid chain reaction
   reactdelay <- 1
@@ -217,9 +212,12 @@ server <- function(input, output, session) {
   
   observeEvent(input$date, {
     if (difftime(Sys.time(), change_daterange()) > reactdelay) {
-      updateSliderInput(session,
+      change_slider(Sys.time())
+      shiny::updateSliderInput(session,
                         "date2",
-                        value = c(input$date[1], input$date[2]))
+                        value = c(input$date[1], 
+                                  input$date[2]),
+                        timeFormat = "%b, %d, %Y") # Needs fixing
     }
   })
   # Data for second pie chart and table (rightmost)
@@ -246,7 +244,7 @@ server <- function(input, output, session) {
         dplyr::filter(if (input$data == "What Is The Best Description For Your Role?") n > 5 else n > 0) # Filter out many responses with few observations for just one column selection
     })
     
-    options(shiny.usecairo = T)
+    options(shiny.usecairo = T) # I don't think this does anything, need to read about it
     
     output$piePlot <- renderPlot({
         g <- ggplot2::ggplot(mydata(), aes(x = 0, y = n, fill = reorder(`get(input$data)`, n))) + #Pie chart input, ordered by n
@@ -278,8 +276,7 @@ server <- function(input, output, session) {
             theme(legend.position = "none",
                   plot.title = element_text(hjust = 0.5, family = "Oswald"),
                   plot.subtitle = element_text(hjust = 0.5, family = "Oswald", 
-                                               margin = margin(t = 5, unit = "pt")),
-                  text = element_text(family = "Oswald")#,
+                                               margin = margin(t = 5, unit = "pt"))
                   # plot.background = element_rect(fill = "#355c7d", color = "#355c7d")
                   )
         cowplot::ggdraw(g) #+
@@ -316,8 +313,7 @@ server <- function(input, output, session) {
         theme(legend.position = "none",
               plot.title = element_text(hjust = 0.5, family = "Oswald"),
               plot.subtitle = element_text(hjust = 0.5, family = "Oswald", 
-                                           margin = margin(t = 5, unit = "pt")),
-              text = element_text(family = "Oswald")#,
+                                           margin = margin(t = 5, unit = "pt"))
               # plot.background = element_rect(fill = "#355c7d", color = "#355c7d")
               )
       cowplot::ggdraw(g2) #+
@@ -325,6 +321,7 @@ server <- function(input, output, session) {
         # theme(plot.background = element_rect(fill = "#355c7d", color = NA))
     }, height = 400, width = 700, res = 80)
     
+    # Might need to output as images for resolution issues?
     # output$piePlotImage <-
     #   renderImage({
     #     outfile <- here("Images/g2.png")
@@ -333,7 +330,8 @@ server <- function(input, output, session) {
     #          width = 700,
     #          height = 400)
     #   }, deleteFile = F)
-
+    
+    # Right most table with NAs
     output$tableData <- DT::renderDT({
         DT::datatable(mydata(), 
                       colnames = c(paste(str_to_title(input$data)), "Percent", "Number"), # Column names
@@ -356,6 +354,7 @@ server <- function(input, output, session) {
                     backgroundPosition = 'right') # Add percent bars
     })
     
+    # Left most table without NAs
     output$tableData2 <- DT::renderDT({
       DT::datatable(mydata2(), 
                     colnames = c(paste(str_to_title(input$data)), "Percent", "Number"), # Column names
@@ -379,9 +378,9 @@ server <- function(input, output, session) {
                     backgroundPosition = 'right') # Add percent bars
     })
     
-    output$textData <- renderText({ 
-        paste0("You Have Selected ", input$data)
-    })
+    # output$textData <- renderText({ 
+    #     paste0("You Have Selected ", input$data)
+    # })
 }
 
 # Run the application 
