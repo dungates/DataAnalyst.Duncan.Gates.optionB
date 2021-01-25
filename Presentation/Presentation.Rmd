@@ -1,161 +1,118 @@
 ---
-title: "Mid-Pandemic Sentiment According to Teaching Lab Data"
-author: "Duncan Gates"
+title: "Mid-Pandemic Sentiment: A Story of Time and Place"
 output:
   revealjs::revealjs_presentation:
-    theme: sky
+    theme: white
     highlight: espresso
     transition: fade
     background_transition: zoom
     center: true
-    # css: styles.css
+    css: styles.css
 ---
 
 ```{r include = F}
 library(tidyverse)
 library(here)
-library(shiny)
+# library(shiny)
 ```
 
 ## {data-background-iframe="https://dungates.shinyapps.io/PieCharter/"}
 
 <!-- <iframe height="800" width="100%" frameborder="no" src="https://dungates.shinyapps.io/PieCharter/"> </iframe> -->
 
-## **Pause When the Pandemic Starts**
-
-```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
-knitr::include_graphics(here("Images/PresentationAllScoresDate.png"))
-```
+## {data-background-image="/Users/dunk/Teaching Lab/Images/PresentationAllScoresDate.png" data-background-size="contain"}
 
 <!-- ## {data-background-size="contain" data-background-image="/Users/dunk/DataAnalyst.Duncan.Gates.optionB/Images/PresentationPandemicScores.png"} -->
 
 ## {data-background-iframe="https://duncangates.me/PresentationInteractive.html" data-background-interactive=true}
 
 
-## **Supporting Learning**
-
-```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
-knitr::include_graphics(here("Images/support_learning.png"))
-```
-
-<div style="font-size:70%;" >
-- The most common words for activities that support learning appear to be planning, discussion, and student by a wide margin. This seems pretty reasonable and there isn’t much to read into in that regard.
-</div>
-
-## **Mostly No Additional Comments**
-
-```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
-knitr::include_graphics(here("Images/additional_comments2.png"))
-```
-
-- Initially its obvious that most people don’t bother to fill out the additional comments part of the survey
-
-## **Actual Additional Comments**
+## **Additional Comments Without Non-Responses**
 
 
-```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
+```{r  echo=FALSE, fig.cap="A caption", out.width = '110%'}
 knitr::include_graphics(here("Images/additional_comments.png"))
 ```
 
-- Indicates there might be some timeliness issues or other need for better time partitioning.
+<div style="font-size:50%;">
+- Initially it was obvious most people don't fill out this part of the survey, but filtering reveals there might be some general timeliness issues, or other need for better time partitioning.
+</div>
 
-## **What Improved Experience?**
+## **What Improved the Experience?**
 
 
-```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
+```{r  echo=FALSE, fig.cap="A caption", out.width = '130%'}
 knitr::include_graphics(here("Images/improved_experience.png"))
 ```
 
+<div style="font-size:50%;">
 - Again it looks like time is a big factor, lessons and planning show up here a lot too.
-
-## **Learning Teachers Were Excited to Try Out**
-
-```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
-knitr::include_graphics(here("Images/excited_to_try.png"))
-```
-
-- A lot of expectable themes show up looking at learning to try out, teachers seem to be very interested in “text”, “learning strategy”, and relating it to “students.”
-
-## **What Went Well**
+</div>
 
 
-```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
+## **What Went Well?**
+
+
+```{r  echo=FALSE, fig.cap="A caption", out.width = '130%'}
 knitr::include_graphics(here("Images/professional_learning.png"))
 ```
 
-- “Collaboration” appears to be working well, and “discussions” appears too so group based stuff seems very successful. “Time” makes another appearance as well.
-
-## **Why Were the Given Ratings Given?**
-
-
-```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
-knitr::include_graphics(here("Images/rating_reason.png"))
-```
-
-- The most common words for people who bothered to fill out their reason for the rating was that it was “informative”, “helpful”, and “knowledgeable” which are all positive. “Time” and “feel” make appearances at the bottom indicating some potential negative feedback.
-
-## **Most Common Ratings**
-
-```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
-knitr::include_graphics(here("Images/ratings.png"))
-```
-
-- Looks like people are doing a pretty good job in general!
+<div style="font-size:50%;">
+- “Collaboration” appears to be working well, and “discussions” appears as well, group based interaction seems very successful. “Time” makes yet another appearance as well.
+</div>
 
 ## **Most Common Two Word Sequences**
 
-```{r  echo=FALSE, fig.cap="A caption", out.width = '60%'}
+```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
 knitr::include_graphics(here("Images/bigram.png"))
 ```
 
-<div style="font-size:60%;" >
-- The most common bigram by far is "more time", "was very" and "was great" appear indicating people are doing a great job
-
-- "grade level" is an interesting response and requires more investigation
+<div style="font-size:50%;" >
+- The most common bigram by far is "more time", "was very", and "was great" also show up, indicating people are doing a great job.
 </div>
 
 ## **Sample of Responses with "more time"**
 
-```{r  echo=FALSE, fig.cap="A caption", out.width = '60%'}
+```{r  echo=FALSE, fig.cap="A caption", out.width = '80%'}
 knitr::include_graphics(here("Images/Response Sample.png"))
 ```
 
 <div style="font-size:50%;" >
-- Based on reading actual responses it seems like there is a general request for more time
+- REPLACE WITH UPDATED INTERACTIVITY
 </div>
 
 ## **A Network of the Data**
 
-```{r  echo=FALSE, fig.cap="A caption", out.width = '60%'}
+```{r  echo=FALSE, fig.cap="A caption", out.width = '90%'}
 knitr::include_graphics(here("Images/network.png"))
 ```
 
-<div style="font-size:60%;" >
-- Model of most common bigrams based on eigenvector centrality: fancy math way of ranking importance of different connections which are denoted by "nodes" - the blue circles, and arrows to indicate "direction" 
+<div style="font-size:50%;" >
+- Model of most common bigrams based on eigenvector centrality: fancy math way of ranking importance of different connections which are denoted by "nodes" - the blue circles, and arrows to indicate "direction" of the relationship. 
 </div>
 
 ## **AFINN Model**
 
-```{r  echo=FALSE, fig.cap="A caption", out.width = '60%'}
+```{r  echo=FALSE, fig.cap="A caption", out.width = '85%'}
 knitr::include_graphics(here("Images/not_preceding.png"))
 ```
 
-<div style="font-size:60%;" >
-- AFINN gives a numeric sentiment value for each word, with positive or negative numbers indicating the direction of the sentiment
+<div style="font-size:50%;" >
+- AFINN gives a numeric sentiment value for each word, with positive or negative numbers to indicate sentiment.
 
-- Chart is weighted by number of occurrences
+- The sentiment is subsequently weighted by number of occurrences.
 </div>
 
 ## **Word Topic Probability Model**
 
-```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
+```{r  echo=FALSE, fig.cap="A caption", out.width = '120%'}
 knitr::include_graphics(here("Images/word_topic_probability.png"))
 ```
 
-<div style="font-size:60%;" >
+<div style="font-size:50%;" >
 - Per-topic-per-word probabilities topic model with a number of topics proportional to the response types.
 
-- “Nothing”, has the highest probability response to what could have improved your experience, which is a really good sign!
+- Note again the appearance of more time as top responses to "what could have improved your experience?"
 </div>
 
-## **Thanks!**
+## **Ultimate takeaway is more time and collaboration would result in improvement!**
