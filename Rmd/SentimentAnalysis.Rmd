@@ -31,7 +31,7 @@ library(gt) # Tables
 library(gtsummary) # Also Tables
 teaching_colors <- c("#04ABEB", "#040404", "#346475", "#324D56") # Teaching Lab Color Palette - derived from logo
 col = grDevices::colorRampPalette(c("#040404", "#04ABEB")) # Color palette maker for blue theme, based on teaching lab color palette
-htmltools::tagList(rmarkdown::html_dependency_font_awesome()) # Needed so fa's in footer will show
+# htmltools::tagList(rmarkdown::html_dependency_font_awesome()) # Needed so fa's in footer will show
 font <- "Oswald"
 ```
 
@@ -220,32 +220,39 @@ text_additional_comments %>%
   geom_col() +
   scale_fill_distiller(palette = "Blues") +
   geom_text(aes(label = n), hjust = -0.14) +
-  labs(x = "", y = "", title = "Most Common Words for Additional Comments") + 
+  labs(x = "", y = "", title = "Top 10 Words in Additional Comments") + 
   coord_flip() +
   theme(legend.position = "none")
 NAs <- c(NA, "na", "n/a", "no", "nope", "Na") # Different ways of saying no comment to filter out
 text_additional_comments_graph <- text_additional_comments %>%
   count(word, sort = TRUE) %>%
-  dplyr::filter(n > 20, word != NAs) %>%
+  dplyr::filter(word != NAs) %>%
   mutate(word = str_to_title(word)) %>%
-  mutate(word = reorder(word, n))
+  mutate(word = reorder(word, n)) %>%
+  slice(1:10)
 ggplot(text_additional_comments_graph, aes(word, n, fill = -n)) +
-  geom_col() +
+  geom_col(color = "black") +
   scale_color_manual(values = c(col(nrow(text_additional_comments_graph)))) +
   geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
-  labs(x = "", y = "", title = "Most Common Words for Additional Comments without Non-Responses") + 
+  scale_y_continuous(breaks = scales::breaks_pretty(n = 8)) +
+  labs(x = "", y = "", title = "Top 10 Additional Comments Words without Non-Responses") + 
   coord_flip() +
+  theme_bw() +
   theme(
           legend.position = "none",
           legend.title = element_blank(),
-          plot.title = element_text(hjust = 0.5, font),
+          plot.title = element_text(hjust = 0.5, font, size = 16),
           plot.subtitle = element_text(hjust = 0.5, font),
           panel.grid.major.x = element_blank(),
           panel.grid.minor.y = element_blank(),
-          axis.text.x = element_text(color = "#324D56", font),
+          panel.grid.minor.x = element_blank(),
+          panel.border = element_blank(),
+          axis.text.x = element_text(color = "#324D56", font, size = 12),
           axis.title.y = element_text(font),
-          axis.text.y = element_text(color = "#324D56", font),
+          axis.text.y = element_text(color = "#324D56", font, size = 12),
+          axis.ticks.length = unit(0.2, "cm"),
           text = element_text(family = font))
+ggsave(here("Images/PresentationAdditionalComments.png"), width = 1629.09/100, height = 970/100)
 ```
 
 Again it looks like time is a big factor, lessons and planning show up here a lot too.
@@ -253,27 +260,33 @@ Again it looks like time is a big factor, lessons and planning show up here a lo
 ```{r fig.width = 14}
 text_improved_experience_graph <- text_improved_experience %>%
   count(word, sort = TRUE) %>%
-  dplyr::filter(n > 100) %>%
   dplyr::filter(word != c("na")) %>%
   mutate(word = reorder(word, n)) %>%
-  mutate(word = str_to_title(word))
+  mutate(word = str_to_title(word)) %>%
+  slice(1:10)
 ggplot(text_improved_experience_graph, aes(reorder(word, n), n, fill = -n)) +
-  geom_col() +
+  geom_col(color = "black") +
+  scale_y_continuous(breaks = scales::breaks_pretty(n = 8)) +
   scale_color_manual(values = c(col(nrow(text_additional_comments_graph)))) +
   geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
-  labs(x = "", y = "", title = "Most Common Words for What Could Have Improved Experience") + 
+  labs(x = "", y = "", title = "Top 10 Words for What Could Have Improved Experience") + 
   coord_flip() +
+  theme_bw() +
   theme(
           legend.position = "none",
           legend.title = element_blank(),
-          plot.title = element_text(hjust = 0.5, font),
+          plot.title = element_text(hjust = 0.5, font, size = 16),
           plot.subtitle = element_text(hjust = 0.5, font),
           panel.grid.major.x = element_blank(),
           panel.grid.minor.y = element_blank(),
-          axis.text.x = element_text(color = "#324D56", font),
+          panel.grid.minor.x = element_blank(),
+          panel.border = element_blank(),
+          axis.text.x = element_text(color = "#324D56", font, size = 12),
           axis.title.y = element_text(font),
-          axis.text.y = element_text(color = "#324D56", font),
+          axis.text.y = element_text(color = "#324D56", font, size = 12),
+          axis.ticks.length = unit(0.2, "cm"),
           text = element_text(family = font))
+ggsave(here("Images/PresentationImprovedExperience.png"), width = 1629.09/100, height = 970/100)
 ```
 
 A lot of expectable themes show up looking at things to try out, teachers seem to be very interested in "text", "learning strategy", and relating it to "students."
@@ -281,25 +294,29 @@ A lot of expectable themes show up looking at things to try out, teachers seem t
 ```{r fig.width = 14}
 text_learning_try_graph <- text_learning_try %>%
   count(word, sort = TRUE) %>%
-  dplyr::filter(n > 200) %>%
-  mutate(word = reorder(word, n))
+  mutate(word = reorder(word, n)) %>%
+  slice(1:10)
 
 ggplot(text_learning_try_graph, aes(reorder(word, n), n, fill = -n)) +
-  geom_col() +
+  geom_col(color = "black") +
   scale_color_manual(values = c(col(nrow(text_learning_try_graph)))) +
   geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
   labs(x = "", y = "", title = "Most Common Words for Learning they are Excited to Try Out") + 
   coord_flip() +
-    theme(
+  theme_bw() +
+  theme(
           legend.position = "none",
           legend.title = element_blank(),
-          plot.title = element_text(hjust = 0.5, font),
+          plot.title = element_text(hjust = 0.5, font, size = 16),
           plot.subtitle = element_text(hjust = 0.5, font),
           panel.grid.major.x = element_blank(),
           panel.grid.minor.y = element_blank(),
-          axis.text.x = element_text(color = "#324D56", font),
+          panel.grid.minor.x = element_blank(),
+          panel.border = element_blank(),
+          axis.text.x = element_text(color = "#324D56", font, size = 12),
           axis.title.y = element_text(font),
-          axis.text.y = element_text(color = "#324D56", font),
+          axis.text.y = element_text(color = "#324D56", font, size = 12),
+          axis.ticks.length = unit(0.2, "cm"),
           text = element_text(family = font))
 ```
 
@@ -308,28 +325,34 @@ ggplot(text_learning_try_graph, aes(reorder(word, n), n, fill = -n)) +
 ```{r fig.width = 14}
 text_professional_learning_graph <- text_professional_learning %>%
   count(word, sort = TRUE) %>%
-  dplyr::filter(n > 200) %>%
   drop_na() %>%
   mutate(word = reorder(word, n)) %>%
-  mutate(word = str_to_title(word))
+  mutate(word = str_to_title(word)) %>%
+  slice(1:10)
 
 ggplot(text_professional_learning_graph, aes(reorder(word, n), n, fill = -n)) +
-  geom_col() +
+  geom_col(color = "black") +
+  scale_y_continuous(breaks = scales::breaks_pretty(n = 8)) +
   scale_color_manual(values = c(col(nrow(text_professional_learning_graph)))) +
   geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
-  labs(x = "", y = "", title = "Most Common Words for What Went Well in Professional Learning") + 
+  labs(x = "", y = "", title = "Top 10 Words for What Went Well in the Learning Experience") + 
   coord_flip() +
-      theme(
+  theme_bw() +
+  theme(
           legend.position = "none",
           legend.title = element_blank(),
-          plot.title = element_text(hjust = 0.5, font),
+          plot.title = element_text(hjust = 0.5, font, size = 16),
           plot.subtitle = element_text(hjust = 0.5, font),
           panel.grid.major.x = element_blank(),
           panel.grid.minor.y = element_blank(),
-          axis.text.x = element_text(color = "#324D56", font),
+          panel.grid.minor.x = element_blank(),
+          panel.border = element_blank(),
+          axis.text.x = element_text(color = "#324D56", font, size = 12),
           axis.title.y = element_text(font),
-          axis.text.y = element_text(color = "#324D56", font),
+          axis.text.y = element_text(color = "#324D56", font, size = 12),
+          axis.ticks.length = unit(0.2, "cm"),
           text = element_text(family = font))
+ggsave(here("Images/PresentationProfessionalLearning.png"), width = 1629.09/100, height = 970/100)
 ```
 
 The most common words for people who bothered to fill out their reason for the rating was that it was "informative", "helpful", and "knowledgeable" which are all positive. "Time" and "feel" make appearances at the bottom indicating some potential negative feedback.
@@ -348,17 +371,17 @@ ggplot(text_rating_reason_graph, aes(reorder(word, n), n, fill = -n)) +
   geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
   labs(x = "", y = "", title = "Most Common Words for What Went Well in Professional Learning") + 
   coord_flip() +
-      theme(
-          legend.position = "none",
-          legend.title = element_blank(),
-          plot.title = element_text(hjust = 0.5, font),
-          plot.subtitle = element_text(hjust = 0.5, font),
-          panel.grid.major.x = element_blank(),
-          panel.grid.minor.y = element_blank(),
-          axis.text.x = element_text(color = "#324D56", font),
-          axis.title.y = element_text(font),
-          axis.text.y = element_text(color = "#324D56", font),
-          text = element_text(family = font))
+  theme(
+      legend.position = "none",
+      legend.title = element_blank(),
+      plot.title = element_text(hjust = 0.5, font),
+      plot.subtitle = element_text(hjust = 0.5, font),
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.y = element_blank(),
+      axis.text.x = element_text(color = "#324D56", font),
+      axis.title.y = element_text(font),
+      axis.text.y = element_text(color = "#324D56", font),
+      text = element_text(family = font))
 ```
 
 Looks like people are doing a pretty good job in general.
@@ -455,22 +478,28 @@ bigrams_united_graph <- bigrams_united %>%
   mutate(word = str_to_title(word))
 
 ggplot(bigrams_united_graph, aes(reorder(word, n), n, fill = -n)) +
-  geom_col() +
+  geom_col(color = "black") +
   scale_color_manual(values = col(nrow(bigrams_united_graph))) +
+  scale_y_continuous(breaks = scales::breaks_pretty(n = 8)) +
   geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
-  labs(x = "", y = "", title = "Most Common Bigrams") + 
+  labs(x = "", y = "", title = "Top 10 Bigrams (Two Word Combinations)") + 
   coord_flip() +
+  theme_bw() +
   theme(
           legend.position = "none",
           legend.title = element_blank(),
-          plot.title = element_text(hjust = 0.5, font),
+          plot.title = element_text(hjust = 0.5, font, size = 16),
           plot.subtitle = element_text(hjust = 0.5, font),
           panel.grid.major.x = element_blank(),
           panel.grid.minor.y = element_blank(),
-          axis.text.x = element_text(color = "#324D56", font),
+          panel.grid.minor.x = element_blank(),
+          panel.border = element_blank(),
+          axis.text.x = element_text(color = "#324D56", font, size = 12),
           axis.title.y = element_text(font),
-          axis.text.y = element_text(color = "#324D56", font),
+          axis.text.y = element_text(color = "#324D56", font, size = 12),
+          axis.ticks.length = unit(0.2, "cm"),
           text = element_text(family = font))
+ggsave(here("Images/PresentationBigram.png"), width = 1629.09/100, height = 970/100)
 ```
 
 ```{r}
@@ -513,23 +542,27 @@ trigrams_united_graph <- trigrams_united %>%
   mutate(word = str_to_title(word))
 
 ggplot(trigrams_united_graph, aes(reorder(word, n), n, fill = -n)) +
-    geom_col() +
+    geom_col(color = "black") +
+    scale_y_continuous(breaks = breaks_pretty(n = 8)) +
     scale_color_manual(values = col(nrow(trigrams_united_graph))) +
     geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
-    geom_hline(yintercept = 0, color = "black") +
-    labs(x = "", y = "", title = "Most Common Trigrams") + 
+    labs(x = "", y = "", title = "Top 10 Trigrams") + 
     coord_flip() +
-    theme(
-        legend.position = "none",
-        legend.title = element_blank(),
-        plot.title = element_text(hjust = 0.5, font),
-        plot.subtitle = element_text(hjust = 0.5, font),
-        panel.grid.major.y = element_blank(),
-        panel.grid.minor.y = element_blank(),
-        axis.text.x = element_text(color = "#324D56", font),
-        axis.title.y = element_text(font),
-        axis.text.y = element_text(color = "#324D56", font),
-        text = element_text(family = font))
+  theme_bw() +
+  theme(
+          legend.position = "none",
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5, font, size = 16),
+          plot.subtitle = element_text(hjust = 0.5, font),
+          panel.border = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          axis.text.x = element_text(color = "#324D56", font, size = 12),
+          axis.title.y = element_text(font),
+          axis.text.y = element_text(color = "#324D56", font, size = 12),
+          text = element_text(family = font))
+ggsave(here("Images/PresentationTrigram.png"), width = 1629.09/100, height = 970/100)
 ```
 
 

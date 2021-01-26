@@ -612,21 +612,21 @@ ggsave(here("Images/PresentationPandemicScores.png"), width = 5050.179/300, heig
 #               "Probably more time to dive in and an in person training but unfortunately we didn't have either of those opportunities",
 #               "more collaborations with our own school...",
 #               "More chance to collaborate with same grade-level teachers. More opportunity to investigate the material with classroom teachers and formulate questions that would need answering.")
-moretime <- dput(sorted_teaching_df %>% dplyr::filter(str_detect(`What could have improved your experience?`,
-                                                c("more time|More time|collaborat")) == T & 
-                                       `Date for the session` > "2020-04-01") %>%
-  dplyr::select() %>%
-    dplyr::pull())
-one_moretime <- moretime[1]
-one_moretime2 <- moretime[2]
-one_moretime3 <- moretime[3]
-one_moretime4 <- moretime[4]
-one_moretime5 <- moretime[5]
-one_moretime6 <- moretime[6]
-one_moretime7 <- moretime[7]
-one_moretime8 <- moretime[7]
-one_moretime9 <- moretime[9]
-one_moretime10 <- moretime[10]
+# moretime <- dput(sorted_teaching_df %>% dplyr::filter(str_detect(`What could have improved your experience?`,
+#                                                 c("more time|More time|collaborat")) == T & 
+#                                        `Date for the session` > "2020-04-01") %>%
+#   dplyr::select() %>%
+#     dplyr::pull())
+# one_moretime <- moretime[1]
+# one_moretime2 <- moretime[2]
+# one_moretime3 <- moretime[3]
+# one_moretime4 <- moretime[4]
+# one_moretime5 <- moretime[5]
+# one_moretime6 <- moretime[6]
+# one_moretime7 <- moretime[7]
+# one_moretime8 <- moretime[7]
+# one_moretime9 <- moretime[9]
+# one_moretime10 <- moretime[10]
 
 post_responses <- sorted_teaching_df %>% 
   dplyr::filter(prepost == "Post-Pandemic") %>% 
@@ -640,11 +640,12 @@ post_responses <- sorted_teaching_df %>%
   mutate(Date = format(`Date for the session`, '%b, %d %Y')) %>%
   select(-`Date for the session`) %>%
   dplyr::arrange(`How likely are you to recommend this professional learning to a colleague or friend?`)
+
 pandemic_response_table <- post_responses %>%
   gt::gt() %>%
   tab_header(
     title = md("&#129440; **Reviews in the Post-Pandemic Era** &#129440;"),
-    subtitle = md("Sorted *Worst-Best*")
+    subtitle = md("Sorted *Worst-Best:* All 123 Responses")
   ) %>%
   cols_width(
     vars(`How likely are you to recommend this professional learning to a colleague or friend?`) ~ px(110),
@@ -667,6 +668,48 @@ pandemic_response_table <- post_responses %>%
                palette = col(nrow(post_responses))
                %>% as.character(),
              domain = NULL)
+  ) %>%
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "right",
+        color = "black",
+        weight = px(3)
+      )
+    ),
+    locations = list(
+      cells_body(
+        columns = vars(`How likely are you to recommend this professional learning to a colleague or friend?`)
+      )
+    )
+  ) %>%
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "bottom",
+        color = "black",
+        weight = px(3)
+      )
+    ),
+    locations = list(
+      cells_column_labels(
+        columns = gt::everything()
+      )
+    )
+  ) %>%
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "right",
+        color = "gray50",
+        weight = px(1.5)
+      )
+    ),
+    locations = list(
+      cells_body(
+        columns = vars(`What could have improved your experience?`, `Why did you choose this rating?`, `Professional training session`)
+      )
+    )
   ) %>%
   # tab_style(
   #   style = list(
@@ -819,6 +862,99 @@ pandemic_response_table <- post_responses %>%
     stub.border.width = "1px",
     summary_row.border.color = "#989898")
 gtsave(pandemic_response_table, here("HTML/PresentationTable.html"))
+```
+
+```{r}
+pandemic_response_table_filtered <- post_responses %>%
+  dplyr::filter(str_detect(`What could have improved your experience?`, c("more time|More time|collaborat")) == T) %>%
+  gt::gt() %>%
+  tab_header(
+    title = md("&#129440; **Reviews in the Post-Pandemic Era** &#129440;"),
+    subtitle = md("Sorted *Worst-Best:* Filtered for Time and Collaboration")
+  ) %>%
+  cols_width(
+    vars(`How likely are you to recommend this professional learning to a colleague or friend?`) ~ px(110),
+         everything() ~ px(250)
+  ) %>%
+  cols_label(
+    `How likely are you to recommend this professional learning to a colleague or friend?` = md("**Likeliness to Recommend**"),
+    `Why did you choose this rating?` = md("**Why did you choose this rating?**"), 
+    `What could have improved your experience?` = md("**What could have improved your experience?**"),
+    `Professional training session` = md("**Professional training session**"),
+    Date = md("**Date**"),
+    `Select the name of your first facilitator.` = md("**Facilitator**")
+  ) %>%
+  cols_align(
+    align = "center",
+    columns = vars(`How likely are you to recommend this professional learning to a colleague or friend?`)
+  ) %>%
+  data_color(columns = vars(`How likely are you to recommend this professional learning to a colleague or friend?`),
+             colors = scales::col_numeric(
+               palette = col(nrow(post_responses))
+               %>% as.character(),
+             domain = NULL)
+  ) %>%
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "right",
+        color = "black",
+        weight = px(3)
+      )
+    ),
+    locations = list(
+      cells_body(
+        columns = vars(`How likely are you to recommend this professional learning to a colleague or friend?`)
+      )
+    )
+  ) %>%
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "bottom",
+        color = "black",
+        weight = px(3)
+      )
+    ),
+    locations = list(
+      cells_column_labels(
+        columns = gt::everything()
+      )
+    )
+  ) %>%
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "right",
+        color = "gray50",
+        weight = px(1.5)
+      )
+    ),
+    locations = list(
+      cells_body(
+        columns = vars(`What could have improved your experience?`, `Why did you choose this rating?`, `Professional training session`)
+      )
+    )
+  ) %>%
+  tab_options(
+    summary_row.background.color = "#ACEACE80",
+    grand_summary_row.background.color = "#990000",
+    row_group.background.color = "#FFEFDB80",
+    heading.background.color = "#04ABEB", # Main Heading Background
+    column_labels.background.color = "#EFFBFC",
+    stub.background.color = "#EFFBFC",
+    table.font.color = "#323232",
+    table.font.names = "Oswald",
+    table_body.hlines.color = "#989898",
+    table_body.border.top.color = "#989898",
+    heading.border.bottom.color = "#989898",
+    row_group.border.top.color = "#989898",
+    row_group.border.bottom.style = "none",
+    stub.border.style = "dashed",
+    stub.border.color = "#989898",
+    stub.border.width = "1px",
+    summary_row.border.color = "#989898")
+gtsave(pandemic_response_table_filtered, here("HTML/PresentationTableFiltered.html"))
 ```
 
 

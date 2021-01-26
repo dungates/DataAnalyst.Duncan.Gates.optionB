@@ -8,7 +8,6 @@ output:
     background_transition: zoom
     center: true
     css: styles.css
-    self_contained: false
     reveal_options:
       previewLinks: true
 ---
@@ -29,93 +28,72 @@ library(here)
 
 ## {data-background-iframe="https://duncangates.me/PresentationInteractive.html" data-background-interactive=true}
 
+## {data-background-image="/Users/dunk/DataAnalyst.Duncan.Gates.optionB/Images/PresentationAdditionalComments.png" data-background-size="contain"}
 
-## **Additional Comments Without Non-Responses**
+## {data-background-image="/Users/dunk/DataAnalyst.Duncan.Gates.optionB/Images/PresentationImprovedExperience.png" data-background-size="contain"}
 
+## {data-background-image="/Users/dunk/DataAnalyst.Duncan.Gates.optionB/Images/PresentationProfessionalLearning.png" data-background-size="contain"}
 
-```{r  echo=FALSE, fig.cap="A caption", out.width = '110%'}
-knitr::include_graphics(here("Images/additional_comments.png"))
-```
+## {data-background-image="/Users/dunk/DataAnalyst.Duncan.Gates.optionB/Images/PresentationBigram.png" data-background-size="contain"}
 
-<div style="font-size:50%;">
-- Initially it was obvious most people don't fill out this part of the survey, but filtering reveals there might be some general timeliness issues, or other need for better time partitioning.
-</div>
+## {data-background-image="/Users/dunk/DataAnalyst.Duncan.Gates.optionB/Images/PresentationTrigram.png" data-background-size="contain"}
 
-## **What Improved the Experience?**
+<!-- ## **Additional Comments Without Non-Responses** -->
 
 
-```{r  echo=FALSE, fig.cap="A caption", out.width = '130%'}
-knitr::include_graphics(here("Images/improved_experience.png"))
-```
+<!-- ```{r  echo=FALSE, fig.cap="A caption", out.width = '110%'} -->
+<!-- knitr::include_graphics(here("Images/PresentationAdditionalComments.png")) -->
+<!-- ``` -->
 
-<div style="font-size:50%;">
-- Again it looks like time is a big factor, lessons and planning show up here a lot too.
-</div>
+<!-- <div style="font-size:50%;"> -->
+<!-- - Initially it was obvious most people don't fill out this part of the survey, but filtering reveals there might be some general timeliness issues, or other need for better time partitioning. -->
+<!-- </div> -->
+
+<!-- ## **What Improved the Experience?** -->
 
 
-## **What Went Well?**
+<!-- ```{r  echo=FALSE, fig.cap="A caption", out.width = '130%'} -->
+<!-- knitr::include_graphics(here("Images/PresentationImprovedExperience.png")) -->
+<!-- ``` -->
+
+<!-- <div style="font-size:50%;"> -->
+<!-- - Again it looks like time is a big factor, lessons and planning show up here a lot too. -->
+<!-- </div> -->
 
 
-```{r  echo=FALSE, fig.cap="A caption", out.width = '130%'}
-knitr::include_graphics(here("Images/professional_learning.png"))
-```
+<!-- ## **What Went Well?** -->
 
-<div style="font-size:50%;">
-- “Collaboration” appears to be working well, and “discussions” appears as well, group based interaction seems very successful. “Time” makes yet another appearance as well.
-</div>
 
-## **Most Common Two Word Sequences**
+<!-- ```{r  echo=FALSE, fig.cap="A caption", out.width = '130%'} -->
+<!-- knitr::include_graphics(here("Images/PresentationProfessionalLearning.png")) -->
+<!-- ``` -->
 
-```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'}
-knitr::include_graphics(here("Images/bigram.png"))
-```
+<!-- <div style="font-size:50%;"> -->
+<!-- - “Collaboration” appears to be working well, and “discussions” appears as well, group based interaction seems very successful. “Time” makes yet another appearance as well. -->
+<!-- </div> -->
 
-<div style="font-size:50%;" >
-- The most common bigram by far is "more time", "was very", and "was great" also show up, indicating people are doing a great job.
-</div>
+<!-- ## **Most Common Two Word Sequences** -->
 
-## **Sample of Responses with "more time"**
+<!-- ```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'} -->
+<!-- knitr::include_graphics(here("Images/PresentationBigram.png")) -->
+<!-- ``` -->
 
-```{r  echo=FALSE, fig.cap="A caption", out.width = '80%'}
-knitr::include_graphics(here("Images/Response Sample.png"))
-```
+<!-- <div style="font-size:50%;" > -->
+<!-- - The most common bigram by far is "more time", "was very", and "was great" also show up, indicating people are doing a great job. -->
+<!-- </div> -->
 
-<div style="font-size:50%;" >
-- REPLACE WITH UPDATED INTERACTIVITY
-</div>
+<!-- ## **Most Common Three Word Sequences** -->
 
-## **A Network of the Data**
+<!-- ```{r  echo=FALSE, fig.cap="A caption", out.width = '100%'} -->
+<!-- knitr::include_graphics(here("Images/PresentationTrigram.png")) -->
+<!-- ``` -->
 
-```{r  echo=FALSE, fig.cap="A caption", out.width = '90%'}
-knitr::include_graphics(here("Images/network.png"))
-```
+<!-- <div style="font-size:50%;" > -->
+<!-- - Maybe make all of these background images? -->
+<!-- </div> -->
 
-<div style="font-size:50%;" >
-- Model of most common bigrams based on eigenvector centrality: fancy math way of ranking importance of different connections which are denoted by "nodes" - the blue circles, and arrows to indicate "direction" of the relationship. 
-</div>
+## {data-background-iframe="https://duncangates.me/PresentationTable.html"}
 
-## **AFINN Model**
-
-```{r  echo=FALSE, fig.cap="A caption", out.width = '85%'}
-knitr::include_graphics(here("Images/not_preceding.png"))
-```
-
-<div style="font-size:50%;" >
-- AFINN gives a numeric sentiment value for each word, with positive or negative numbers to indicate sentiment.
-
-- The sentiment is subsequently weighted by number of occurrences.
-</div>
-
-## **Word Topic Probability Model**
-
-```{r  echo=FALSE, fig.cap="A caption", out.width = '120%'}
-knitr::include_graphics(here("Images/word_topic_probability.png"))
-```
-
-<div style="font-size:50%;" >
-- Per-topic-per-word probabilities topic model with a number of topics proportional to the response types.
-
-- Note again the appearance of more time as top responses to "what could have improved your experience?"
-</div>
+## {data-background-iframe="https://duncangates.me/PresentationTableFiltered.html"}
 
 ## **Ultimate takeaway is more time and collaboration would result in improvement!**
