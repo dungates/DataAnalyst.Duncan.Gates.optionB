@@ -20,7 +20,6 @@ knitr::opts_chunk$set(echo = F,
                       cache = F, 
                       tidy = T) # No messages, warnings, code echo, align figures center, cache images, and tidy
 library(tidyverse) # So you don't have to code in base R
-library(hrbrthemes) # For pretty graphing themes
 library(readr) # Reading in rds
 library(here) # Cross network consistency
 library(scales) # For graphing scales
@@ -604,8 +603,33 @@ ggsave(here("Images/PresentationPandemicScores.png"), width = 5050.179/300, heig
 ## Table of responses
 
 ```{r}
+# moretime <- c("More time to engage in discussion- not so heavy on the facilitator speaking and engaging everyone. Reflections & small group tasks would be helpful.",
+#               "slowing down and more time to work within my grade level and talk with those teachers",
+#               "A bit more time experiencing some of the activities that students will participate in.",
+#               "more time with resources",
+#               "Having more time to collaborate with fellow teachers.",
+#               "More time to talk to grade level teachers",
+#               "Probably more time to dive in and an in person training but unfortunately we didn't have either of those opportunities",
+#               "more collaborations with our own school...",
+#               "More chance to collaborate with same grade-level teachers. More opportunity to investigate the material with classroom teachers and formulate questions that would need answering.")
+moretime <- dput(sorted_teaching_df %>% dplyr::filter(str_detect(`What could have improved your experience?`,
+                                                c("more time|More time|collaborat")) == T & 
+                                       `Date for the session` > "2020-04-01") %>%
+  dplyr::select() %>%
+    dplyr::pull())
+one_moretime <- moretime[1]
+one_moretime2 <- moretime[2]
+one_moretime3 <- moretime[3]
+one_moretime4 <- moretime[4]
+one_moretime5 <- moretime[5]
+one_moretime6 <- moretime[6]
+one_moretime7 <- moretime[7]
+one_moretime8 <- moretime[7]
+one_moretime9 <- moretime[9]
+one_moretime10 <- moretime[10]
+
 post_responses <- sorted_teaching_df %>% 
-  filter(prepost == "Post-Pandemic") %>% 
+  dplyr::filter(prepost == "Post-Pandemic") %>% 
   select(`How likely are you to recommend this professional learning to a colleague or friend?`, 
          `Why did you choose this rating?`, 
          `What could have improved your experience?`,
@@ -619,7 +643,7 @@ post_responses <- sorted_teaching_df %>%
 pandemic_response_table <- post_responses %>%
   gt::gt() %>%
   tab_header(
-    title = md("**Reviews in the Post-Pandemic Era**"),
+    title = md("&#129440; **Reviews in the Post-Pandemic Era** &#129440;"),
     subtitle = md("Sorted *Worst-Best*")
   ) %>%
   cols_width(
@@ -644,20 +668,157 @@ pandemic_response_table <- post_responses %>%
                %>% as.character(),
              domain = NULL)
   ) %>%
-  tab_style(
-    style = list(
-      cell_fill(color = "skyblue")),
-      locations = cells_body(
-        columns = vars(`Why did you choose this rating?`, 
-         `What could have improved your experience?`,
-         `Professional training session`,
-         `Date`,
-         `Select the name of your first facilitator.`),
-        rows = `Professional training session` == "Guidebooks CM-6"
-      )
-    )
-gtsave(pandemic_response_table, here("Images/PresentationTable.html"))
-  
+  # tab_style(
+  #   style = list(
+  #     cell_fill(color = "#043243")),
+  #     locations = cells_body(
+  #       columns = vars(`Why did you choose this rating?`, 
+  #        `What could have improved your experience?`,
+  #        `Professional training session`,
+  #        `Date`,
+  #        `Select the name of your first facilitator.`),
+  #       rows = `What could have improved your experience?` == one_moretime
+  #     )
+  #   ) %>%
+  # tab_style(
+  #   style = list(
+  #     cell_fill(color = "#043243")),
+  #     locations = cells_body(
+  #       columns = vars(`Why did you choose this rating?`, 
+  #        `What could have improved your experience?`,
+  #        `Professional training session`,
+  #        `Date`,
+  #        `Select the name of your first facilitator.`),
+  #       rows = `What could have improved your experience?` == one_moretime2
+  #     )
+  #   ) %>%
+  # tab_style(
+  #   style = list(
+  #     cell_fill(color = "#043243")),
+  #     locations = cells_body(
+  #       columns = vars(`Why did you choose this rating?`, 
+  #        `What could have improved your experience?`,
+  #        `Professional training session`,
+  #        `Date`,
+  #        `Select the name of your first facilitator.`),
+  #       rows = `What could have improved your experience?` == one_moretime3
+  #     )
+  #   ) %>%
+  # tab_style(
+  #   style = list(
+  #     cell_fill(color = "#043243")),
+  #     locations = cells_body(
+  #       columns = vars(`Why did you choose this rating?`, 
+  #        `What could have improved your experience?`,
+  #        `Professional training session`,
+  #        `Date`,
+  #        `Select the name of your first facilitator.`),
+  #       rows = `What could have improved your experience?` == one_moretime4
+  #     )
+  #   ) %>%
+  # tab_style(
+  #   style = list(
+  #     cell_fill(color = "#043243")),
+  #     locations = cells_body(
+  #       columns = vars(`Why did you choose this rating?`, 
+  #        `What could have improved your experience?`,
+  #        `Professional training session`,
+  #        `Date`,
+  #        `Select the name of your first facilitator.`),
+  #       rows = `What could have improved your experience?` == one_moretime5
+  #     )
+  #   ) %>%
+  # tab_style(
+  #   style = list(
+  #     cell_fill(color = "#043243")),
+  #     locations = cells_body(
+  #       columns = vars(`Why did you choose this rating?`, 
+  #        `What could have improved your experience?`,
+  #        `Professional training session`,
+  #        `Date`,
+  #        `Select the name of your first facilitator.`),
+  #       rows = `What could have improved your experience?` == one_moretime6
+  #     )
+  #   ) %>%
+  # tab_style(
+  #   style = list(
+  #     cell_fill(color = "#043243")),
+  #     locations = cells_body(
+  #       columns = vars(`Why did you choose this rating?`, 
+  #        `What could have improved your experience?`,
+  #        `Professional training session`,
+  #        `Date`,
+  #        `Select the name of your first facilitator.`),
+  #       rows = `What could have improved your experience?` == one_moretime7
+  #     )
+  #   ) %>%
+  # tab_style(
+  #   style = list(
+  #     cell_fill(color = "#043243")),
+  #     locations = cells_body(
+  #       columns = vars(`Why did you choose this rating?`, 
+  #        `What could have improved your experience?`,
+  #        `Professional training session`,
+  #        `Date`,
+  #        `Select the name of your first facilitator.`),
+  #       rows = `What could have improved your experience?` == one_moretime8
+  #     )
+  #   ) %>%
+  # tab_style(
+  #   style = list(
+  #     cell_fill(color = "#043243")),
+  #     locations = cells_body(
+  #       columns = vars(`Why did you choose this rating?`, 
+  #        `What could have improved your experience?`,
+  #        `Professional training session`,
+  #        `Date`,
+  #        `Select the name of your first facilitator.`),
+  #       rows = `What could have improved your experience?` == one_moretime9
+  #     )
+  #   ) %>%
+  # tab_style(
+  #   style = list(
+  #     cell_fill(color = "#043243")),
+  #     locations = cells_body(
+  #       columns = vars(`Why did you choose this rating?`, 
+  #        `What could have improved your experience?`,
+  #        `Professional training session`,
+  #        `Date`,
+  #        `Select the name of your first facilitator.`),
+  #       rows = `What could have improved your experience?` == one_moretime10
+  #     )
+  #   ) %>%
+  # tab_style(
+  #   style = list(
+  #     cell_fill(color = "#04ABEB")),
+  #     locations = cells_body(
+  #       columns = vars(`Why did you choose this rating?`, 
+  #        `What could have improved your experience?`,
+  #        `Professional training session`,
+  #        `Date`,
+  #        `Select the name of your first facilitator.`),
+  #       rows = `Why did you choose this rating?` == moretime
+  #     )
+  #   ) %>%
+  tab_options(
+    summary_row.background.color = "#ACEACE80",
+    grand_summary_row.background.color = "#990000",
+    row_group.background.color = "#FFEFDB80",
+    heading.background.color = "#04ABEB", # Main Heading Background
+    column_labels.background.color = "#EFFBFC",
+    stub.background.color = "#EFFBFC",
+    table.font.color = "#323232",
+    table.font.names = "Oswald",
+    table_body.hlines.color = "#989898",
+    table_body.border.top.color = "#989898",
+    heading.border.bottom.color = "#989898",
+    row_group.border.top.color = "#989898",
+    row_group.border.bottom.style = "none",
+    stub.border.style = "dashed",
+    stub.border.color = "#989898",
+    stub.border.width = "1px",
+    summary_row.border.color = "#989898")
+gtsave(pandemic_response_table, here("HTML/PresentationTable.html"))
 ```
 
 

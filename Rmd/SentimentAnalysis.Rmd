@@ -20,7 +20,6 @@ knitr::opts_chunk$set(echo = F,
                       cache = F, 
                       tidy = T) # No messages, warnings, code echo, align figures center, cache images, and tidy
 library(tidyverse) # So you don't have to code in base R
-library(hrbrthemes) # For pretty graphing themes
 library(readr) # Reading in rds
 library(here) # Cross network consistency
 library(scales) # For graphing scales
@@ -224,16 +223,17 @@ text_additional_comments %>%
   labs(x = "", y = "", title = "Most Common Words for Additional Comments") + 
   coord_flip() +
   theme(legend.position = "none")
-NAs <- c(NA, "na", "n/a", "no", "nope") # Different ways of saying no comment to filter out
+NAs <- c(NA, "na", "n/a", "no", "nope", "Na") # Different ways of saying no comment to filter out
 text_additional_comments_graph <- text_additional_comments %>%
   count(word, sort = TRUE) %>%
   dplyr::filter(n > 20, word != NAs) %>%
+  mutate(word = str_to_title(word)) %>%
   mutate(word = reorder(word, n))
 ggplot(text_additional_comments_graph, aes(word, n, fill = -n)) +
   geom_col() +
   scale_color_manual(values = c(col(nrow(text_additional_comments_graph)))) +
-  geom_text(aes(label = n), hjust = -0.14) +
-  labs(x = "", y = "", title = "Most Common Words for Additional Comments without NAs") + 
+  geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
+  labs(x = "", y = "", title = "Most Common Words for Additional Comments without Non-Responses") + 
   coord_flip() +
   theme(
           legend.position = "none",
@@ -251,65 +251,114 @@ ggplot(text_additional_comments_graph, aes(word, n, fill = -n)) +
 Again it looks like time is a big factor, lessons and planning show up here a lot too.
 
 ```{r fig.width = 14}
-text_improved_experience %>%
+text_improved_experience_graph <- text_improved_experience %>%
   count(word, sort = TRUE) %>%
   dplyr::filter(n > 100) %>%
+  dplyr::filter(word != c("na")) %>%
   mutate(word = reorder(word, n)) %>%
-  ggplot(aes(word, n, fill = -n)) +
+  mutate(word = str_to_title(word))
+ggplot(text_improved_experience_graph, aes(reorder(word, n), n, fill = -n)) +
   geom_col() +
-  scale_fill_distiller(palette = "Blues") +
-  geom_text(aes(label = n), hjust = -0.14) +
+  scale_color_manual(values = c(col(nrow(text_additional_comments_graph)))) +
+  geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
   labs(x = "", y = "", title = "Most Common Words for What Could Have Improved Experience") + 
   coord_flip() +
-  theme(legend.position = "none")
+  theme(
+          legend.position = "none",
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5, font),
+          plot.subtitle = element_text(hjust = 0.5, font),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          axis.text.x = element_text(color = "#324D56", font),
+          axis.title.y = element_text(font),
+          axis.text.y = element_text(color = "#324D56", font),
+          text = element_text(family = font))
 ```
 
 A lot of expectable themes show up looking at things to try out, teachers seem to be very interested in "text", "learning strategy", and relating it to "students."
 
 ```{r fig.width = 14}
-text_learning_try %>%
+text_learning_try_graph <- text_learning_try %>%
   count(word, sort = TRUE) %>%
   dplyr::filter(n > 200) %>%
-  mutate(word = reorder(word, n)) %>%
-  ggplot(aes(word, n, fill = -n)) +
+  mutate(word = reorder(word, n))
+
+ggplot(text_learning_try_graph, aes(reorder(word, n), n, fill = -n)) +
   geom_col() +
-  scale_fill_distiller(palette = "Blues") +
-  geom_text(aes(label = n), hjust = -0.14) +
+  scale_color_manual(values = c(col(nrow(text_learning_try_graph)))) +
+  geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
   labs(x = "", y = "", title = "Most Common Words for Learning they are Excited to Try Out") + 
   coord_flip() +
-  theme(legend.position = "none")
+    theme(
+          legend.position = "none",
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5, font),
+          plot.subtitle = element_text(hjust = 0.5, font),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          axis.text.x = element_text(color = "#324D56", font),
+          axis.title.y = element_text(font),
+          axis.text.y = element_text(color = "#324D56", font),
+          text = element_text(family = font))
 ```
 
 "Collaboration" appears to be working well, and "discussions" appears too so group based stuff seems very successful. "Time" makes another appearance as well.
 
 ```{r fig.width = 14}
-text_professional_learning %>%
+text_professional_learning_graph <- text_professional_learning %>%
   count(word, sort = TRUE) %>%
   dplyr::filter(n > 200) %>%
+  drop_na() %>%
   mutate(word = reorder(word, n)) %>%
-  ggplot(aes(word, n, fill = -n)) +
+  mutate(word = str_to_title(word))
+
+ggplot(text_professional_learning_graph, aes(reorder(word, n), n, fill = -n)) +
   geom_col() +
-  scale_fill_distiller(palette = "Blues") +
-  geom_text(aes(label = n), hjust = -0.14) +
+  scale_color_manual(values = c(col(nrow(text_professional_learning_graph)))) +
+  geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
   labs(x = "", y = "", title = "Most Common Words for What Went Well in Professional Learning") + 
   coord_flip() +
-  theme(legend.position = "none")
+      theme(
+          legend.position = "none",
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5, font),
+          plot.subtitle = element_text(hjust = 0.5, font),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          axis.text.x = element_text(color = "#324D56", font),
+          axis.title.y = element_text(font),
+          axis.text.y = element_text(color = "#324D56", font),
+          text = element_text(family = font))
 ```
 
 The most common words for people who bothered to fill out their reason for the rating was that it was "informative", "helpful", and "knowledgeable" which are all positive. "Time" and "feel" make appearances at the bottom indicating some potential negative feedback.
 
 ```{r fig.width = 14}
-text_rating_reason %>%
+text_rating_reason_graph <- text_rating_reason %>%
   count(word, sort = TRUE) %>%
   dplyr::filter(n > 200) %>%
+  drop_na() %>%
   mutate(word = reorder(word, n)) %>%
-  ggplot(aes(word, n, fill = -n)) +
+  mutate(word = str_to_title(word))
+
+ggplot(text_rating_reason_graph, aes(reorder(word, n), n, fill = -n)) +
   geom_col() +
-  scale_fill_distiller(palette = "Blues") +
-  geom_text(aes(label = n), hjust = -0.14) +
-  labs(x = "", y = "", title = "Most Common Words for Rating Reason") + 
+  scale_color_manual(values = c(col(nrow(text_rating_reason_graph)))) +
+  geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
+  labs(x = "", y = "", title = "Most Common Words for What Went Well in Professional Learning") + 
   coord_flip() +
-  theme(legend.position = "none")
+      theme(
+          legend.position = "none",
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5, font),
+          plot.subtitle = element_text(hjust = 0.5, font),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          axis.text.x = element_text(color = "#324D56", font),
+          axis.title.y = element_text(font),
+          axis.text.y = element_text(color = "#324D56", font),
+          text = element_text(family = font))
 ```
 
 Looks like people are doing a pretty good job in general.
@@ -345,7 +394,7 @@ frequency <- text_df %>%
   group_by(response_type) %>%
   mutate(proportion = n / sum(n)) %>% # Percentage
   ungroup() %>%
-  select(-n) # Create a word frequency table still needs to take into account stopwards
+  select(-n)# Create a word frequency table still needs to take into account stopwords
 
 # ggplot(frequency, aes(x = proportion, y = detractor, color = abs(detractor - proportion))) +
 #   geom_abline(color = "gray40", lty = 2) +
@@ -400,24 +449,95 @@ bigrams_united <- filtered %>%
   count(bigram, sort = T)
 
 # Graph bigrams with over 100 occurrences
-bigrams_united %>%
-  dplyr::filter(n > 100) %>%
+bigrams_united_graph <- bigrams_united %>%
   mutate(word = reorder(bigram, n)) %>%
-  ggplot(aes(word, n, fill = -n)) +
+  slice(1:10) %>%
+  mutate(word = str_to_title(word))
+
+ggplot(bigrams_united_graph, aes(reorder(word, n), n, fill = -n)) +
   geom_col() +
-  scale_fill_distiller(palette = "Blues") +
-  geom_text(aes(label = n), hjust = -0.14) +
+  scale_color_manual(values = col(nrow(bigrams_united_graph))) +
+  geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
   labs(x = "", y = "", title = "Most Common Bigrams") + 
   coord_flip() +
-  theme(legend.position = "none",
-        text = element_text(size = 25))
+  theme(
+          legend.position = "none",
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5, font),
+          plot.subtitle = element_text(hjust = 0.5, font),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          axis.text.x = element_text(color = "#324D56", font),
+          axis.title.y = element_text(font),
+          axis.text.y = element_text(color = "#324D56", font),
+          text = element_text(family = font))
 ```
+
+```{r}
+# Create a trigram table
+trigrams <- text_df %>%
+  unnest_tokens(trigram, text, token = "ngrams", n = 3) 
+
+# Separate bigrams
+separated_tri <- trigrams %>%
+  separate(trigram, c("word1", "word2", "word3"), sep = " ")
+
+# Define our own stop words
+word <- c("i", "i'm", "it", "the", "at", "to", "right", "just", "to", "a", "an",
+          "that", "but", "as", "so", "will", "for", "longer", "i'll", "of", "my",
+          "n", "do", "did", "am", "with", "been", "and", "we")
+
+# Create tibble of stop words
+stopwords <- tibble(word)
+
+# Filter out stop-words
+filtered_tri <- separated_tri %>%
+  dplyr::filter(!word1 %in% stopwords$word) %>%
+  dplyr::filter(!word2 %in% stopwords$word)
+
+# Calculate new bigram counts
+trigram_counts <- filtered_tri %>%
+  dplyr::filter(word1 != "NA" & word2 != "NA") %>%
+  count(word1, word2, sort = T)
+
+# Reunite bigrams with counts
+trigrams_united <- filtered_tri %>%
+  unite(trigram, word1, word2, word3, sep = " ") %>%
+  dplyr::filter(trigram != "NA NA NA") %>%
+  count(trigram, sort = T)
+
+# Graph bigrams with over 100 occurrences
+trigrams_united_graph <- trigrams_united %>%
+  mutate(word = reorder(trigram, n)) %>%
+  slice(1:10) %>%
+  mutate(word = str_to_title(word))
+
+ggplot(trigrams_united_graph, aes(reorder(word, n), n, fill = -n)) +
+    geom_col() +
+    scale_color_manual(values = col(nrow(trigrams_united_graph))) +
+    geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
+    geom_hline(yintercept = 0, color = "black") +
+    labs(x = "", y = "", title = "Most Common Trigrams") + 
+    coord_flip() +
+    theme(
+        legend.position = "none",
+        legend.title = element_blank(),
+        plot.title = element_text(hjust = 0.5, font),
+        plot.subtitle = element_text(hjust = 0.5, font),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        axis.text.x = element_text(color = "#324D56", font),
+        axis.title.y = element_text(font),
+        axis.text.y = element_text(color = "#324D56", font),
+        text = element_text(family = font))
+```
+
 
 Of course we have to look at the actual data to interpret what more time means - here I quickly sample 30 random comments from the 232 unique entries that have "more time" in them to see what most say. There's no specific pattern that emerges other than a general request for more time which almost entirely comes under the "What could have improved your experience" question column.
 
 ```{r}
 text_df %>%
-  dplyr::filter(str_detect(text, "more time")) %>% # Filter only for "more time"
+  dplyr::filter(str_detect(text, c("more time", "being able to"))) %>% # Filter only for "more time"
   dplyr::relocate(text, .before = date_for_the_session) %>% # Put text in front of dataframe
   dplyr::relocate(response_type, .after = text) %>% # Put response type after text
   mutate(Response = row_number()) %>% # Make a row number column for reference
@@ -548,6 +668,13 @@ text_terms %>%
   facet_wrap(~ topic, scales = "free", labeller = as_labeller(labels)) +
   scale_y_reordered() +
   scale_fill_brewer(col(6))
+```
+
+
+# Pre and Post Pandemic Sentiment
+
+```{r}
+
 ```
 
 
