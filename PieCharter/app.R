@@ -150,7 +150,7 @@ ui <- dashboard_page(
           br()
         ),
         menu_item("", icon = shiny::icon("globe"),
-                  tags$a(href="https://dungates.shinyapps.io/PieCharter", "Link to Site!")
+                  tags$a(href="https://dungates.shinyapps.io/PieCharter", "Link to Site!", target="_blank")
                   )
       )
     ),
