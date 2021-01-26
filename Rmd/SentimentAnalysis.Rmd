@@ -30,10 +30,10 @@ library(ggraph) # Networking
 library(igraph) # Networking
 library(gt) # Tables
 library(gtsummary) # Also Tables
-theme_set(theme_minimal() + theme(plot.title = element_text(hjust = 0.5))) # General theme
 teaching_colors <- c("#04ABEB", "#040404", "#346475", "#324D56") # Teaching Lab Color Palette - derived from logo
 col = grDevices::colorRampPalette(c("#040404", "#04ABEB")) # Color palette maker for blue theme, based on teaching lab color palette
 htmltools::tagList(rmarkdown::html_dependency_font_awesome()) # Needed so fa's in footer will show
+font <- "Oswald"
 ```
 
 ```{r}
@@ -72,6 +72,28 @@ cols_agree <- c("learning_session_satisfaction",
 # I didn't actually write this out I used the above code to print to console then I copy pasted
 rename_list <- list(`Date for the session` = 'date_for_the_session', `Professional training session` = 'professional_training_session', `Select your site (district, parish, or network).` = 'select_your_site_district_parish_or_network', `Select the best description for your role.` = 'select_the_best_description_for_your_role', `Select the grade-band(s) you focused on.` = 'select_the_grade_band_s_you_focused_on', `I am satisfied with the overall quality of today's professional learning session.` = 'learning_session_satisfaction', `Today's topic was relevant for my role.` = 'todays_topic_was_relevant_for_my_role', `The activities of today's session were well-designed to help me learn.` = 'designed_to_help_me_learn', `What is the learning from this professional learning that you are most excited about trying out?` = 'learning_to_try_out', `How likely are you to apply this learning to your practice in the next 4-6 weeks?` = 'likely_to_apply_46_weeks', `Select the name of your first facilitator.` = 'select_the_name_of_your_first_facilitator', `S/he facilitated the content clearly....12` = 's_he_facilitated_the_content_clearly_12', `S/he effectively built a community of learners....13` = 's_he_effectively_built_a_community_of_learners_13', `Did you have a second facilitator?` = 'did_you_have_a_second_facilitator', `Select the name of your second facilitator.` = 'select_the_name_of_your_second_facilitator', `S/he facilitated the content clearly....16` = 's_he_facilitated_the_content_clearly_16', `S/he effectively built a community of learners....17` = 's_he_effectively_built_a_community_of_learners_17', `Overall, what went well in this professional learning?` = 'overall_what_went_well_in_this_professional_learning', `Which activities best supported your learning?` = 'which_activities_best_supported_your_learning', `What could have improved your experience?` = 'what_could_have_improved_your_experience', `How likely are you to recommend this professional learning to a colleague or friend?` = 'likely_to_recommend_colleague_friend', `Why did you choose this rating?` = 'why_did_you_choose_this_rating', `Do you have additional comments?` = 'do_you_have_additional_comments')
 ```
+
+```{r}
+theme_tl <- function(){
+  
+  font <- "Oswald" # Assign font up front
+  
+  theme_minimal() %+replace%
+  theme(
+          legend.position = "none",
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5, font),
+          plot.subtitle = element_text(hjust = 0.5, font),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          axis.text.x = element_text(color = "#324D56", font),
+          axis.title.y = element_text(font),
+          axis.text.y = element_text(color = "#324D56", font),
+          legend.text = element_text(font),
+          plot.margin = unit(c(0.1,0.1,-0.8,0.1), "cm"))
+}
+```
+
 
 # Correlogram
 
@@ -203,17 +225,27 @@ text_additional_comments %>%
   coord_flip() +
   theme(legend.position = "none")
 NAs <- c(NA, "na", "n/a", "no", "nope") # Different ways of saying no comment to filter out
-text_additional_comments %>%
+text_additional_comments_graph <- text_additional_comments %>%
   count(word, sort = TRUE) %>%
   dplyr::filter(n > 20, word != NAs) %>%
-  mutate(word = reorder(word, n)) %>%
-  ggplot(aes(word, n, fill = -n)) +
+  mutate(word = reorder(word, n))
+ggplot(text_additional_comments_graph, aes(word, n, fill = -n)) +
   geom_col() +
-  scale_fill_distiller(palette = "Blues") +
+  scale_color_manual(values = c(col(nrow(text_additional_comments_graph)))) +
   geom_text(aes(label = n), hjust = -0.14) +
   labs(x = "", y = "", title = "Most Common Words for Additional Comments without NAs") + 
   coord_flip() +
-  theme(legend.position = "none")
+  theme(
+          legend.position = "none",
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5, font),
+          plot.subtitle = element_text(hjust = 0.5, font),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          axis.text.x = element_text(color = "#324D56", font),
+          axis.title.y = element_text(font),
+          axis.text.y = element_text(color = "#324D56", font),
+          text = element_text(family = font))
 ```
 
 Again it looks like time is a big factor, lessons and planning show up here a lot too.

@@ -616,7 +616,7 @@ post_responses <- sorted_teaching_df %>%
   mutate(Date = format(`Date for the session`, '%b, %d %Y')) %>%
   select(-`Date for the session`) %>%
   dplyr::arrange(`How likely are you to recommend this professional learning to a colleague or friend?`)
-post_responses %>%
+pandemic_response_table <- post_responses %>%
   gt::gt() %>%
   tab_header(
     title = md("**Reviews in the Post-Pandemic Era**"),
@@ -656,6 +656,7 @@ post_responses %>%
         rows = `Professional training session` == "Guidebooks CM-6"
       )
     )
+gtsave(pandemic_response_table, here("Images/PresentationTable.html"))
   
 ```
 
