@@ -29,6 +29,8 @@ library(ggraph) # Networking
 library(igraph) # Networking
 library(gt) # Tables
 library(gtsummary) # Also Tables
+library(cowplot) # Graphs
+library(ggtext) # Graphs
 teaching_colors <- c("#04ABEB", "#040404", "#346475", "#324D56") # Teaching Lab Color Palette - derived from logo
 col = grDevices::colorRampPalette(c("#040404", "#04ABEB")) # Color palette maker for blue theme, based on teaching lab color palette
 # htmltools::tagList(rmarkdown::html_dependency_font_awesome()) # Needed so fa's in footer will show
@@ -77,7 +79,7 @@ theme_tl <- function(){
   
   font <- "Oswald" # Assign font up front
   
-  theme_minimal() %+replace%
+  theme_bw() %+replace%
   theme(
           legend.position = "none",
           legend.title = element_blank(),
@@ -87,9 +89,111 @@ theme_tl <- function(){
           panel.grid.minor.y = element_blank(),
           axis.text.x = element_text(color = "#324D56", font),
           axis.title.y = element_text(font),
+          axis.title.x = element_text(font),
           axis.text.y = element_text(color = "#324D56", font),
           legend.text = element_text(font),
-          plot.margin = unit(c(0.1,0.1,-0.8,0.1), "cm"))
+          text = element_text(font))
+}
+```
+
+```{r}
+percent_contained <- function(df, df2, string) {
+  word1 <- paste0(str_to_lower(as.character(df$word[1])),
+             "|", str_to_title(as.character(df$word[1])))
+  word2 <- paste0(str_to_lower(as.character(df$word[2])),
+             "|", str_to_title(as.character(df$word[2])))
+  word3 <- paste0(str_to_lower(as.character(df$word[3])),
+             "|", str_to_title(as.character(df$word[3])))
+  word4 <- paste0(str_to_lower(as.character(df$word[4])),
+             "|", str_to_title(as.character(df$word[4])))
+  word5 <- paste0(str_to_lower(as.character(df$word[5])),
+             "|", str_to_title(as.character(df$word[5])))
+  word6 <- paste0(str_to_lower(as.character(df$word[6])),
+             "|", str_to_title(as.character(df$word[6])))
+  word7 <- paste0(str_to_lower(as.character(df$word[7])),
+             "|", str_to_title(as.character(df$word[7])))
+  word8 <- paste0(str_to_lower(as.character(df$word[8])),
+             "|", str_to_title(as.character(df$word[8])))
+  word9 <- paste0(str_to_lower(as.character(df$word[9])),
+             "|", str_to_title(as.character(df$word[9])))
+  word10 <- paste0(str_to_lower(as.character(df$word[10])),
+             "|", str_to_title(as.character(df$word[10])))
+  
+  additional_comments <- text_data %>%
+    dplyr::select({{string}}) %>%
+    drop_na() %>%
+    mutate(contains1 = case_when(str_detect({{string}}, 
+                                            word1) == T ~ 1),
+           contains2 = case_when(str_detect({{string}}, 
+                                            word2) == T ~ 1),
+           contains3 = case_when(str_detect({{string}}, 
+                                            word3) == T ~ 1),
+           contains4 = case_when(str_detect({{string}}, 
+                                            word4) == T ~ 1),
+           contains5 = case_when(str_detect({{string}}, 
+                                            word5) == T ~ 1),
+           contains6 = case_when(str_detect({{string}}, 
+                                            word6) == T ~ 1),
+           contains7 = case_when(str_detect({{string}}, 
+                                            word7) == T ~ 1),
+           contains8 = case_when(str_detect({{string}}, 
+                                            word8) == T ~ 1),
+           contains9 = case_when(str_detect({{string}}, 
+                                            word9) == T ~ 1),
+           contains10 = case_when(str_detect({{string}}, 
+                                            word10) == T ~ 1))
+  percentages <- tibble(percent = round((colSums(additional_comments[2:11], na.rm = T)/nrow(additional_comments))*100, 2),
+                        word = df$word,
+                        n = df$n)
+}
+# for bigram and trigram
+percent_gram_contained <- function(df) {
+  word1 <- paste0(str_to_lower(as.character(df$word[1])),
+             "|", str_to_title(as.character(df$word[1])))
+  word2 <- paste0(str_to_lower(as.character(df$word[2])),
+             "|", str_to_title(as.character(df$word[2])))
+  word3 <- paste0(str_to_lower(as.character(df$word[3])),
+             "|", str_to_title(as.character(df$word[3])))
+  word4 <- paste0(str_to_lower(as.character(df$word[4])),
+             "|", str_to_title(as.character(df$word[4])))
+  word5 <- paste0(str_to_lower(as.character(df$word[5])),
+             "|", str_to_title(as.character(df$word[5])))
+  word6 <- paste0(str_to_lower(as.character(df$word[6])),
+             "|", str_to_title(as.character(df$word[6])))
+  word7 <- paste0(str_to_lower(as.character(df$word[7])),
+             "|", str_to_title(as.character(df$word[7])))
+  word8 <- paste0(str_to_lower(as.character(df$word[8])),
+             "|", str_to_title(as.character(df$word[8])))
+  word9 <- paste0(str_to_lower(as.character(df$word[9])),
+             "|", str_to_title(as.character(df$word[9])))
+  word10 <- paste0(str_to_lower(as.character(df$word[10])),
+             "|", str_to_title(as.character(df$word[10])))
+  
+  additional_comments <- tibble(text = text_df$text) %>%
+    drop_na() %>%
+    mutate(contains1 = case_when(str_detect(text, 
+                                            word1) == T ~ 1),
+           contains2 = case_when(str_detect(text, 
+                                            word2) == T ~ 1),
+           contains3 = case_when(str_detect(text, 
+                                            word3) == T ~ 1),
+           contains4 = case_when(str_detect(text, 
+                                            word4) == T ~ 1),
+           contains5 = case_when(str_detect(text, 
+                                            word5) == T ~ 1),
+           contains6 = case_when(str_detect(text, 
+                                            word6) == T ~ 1),
+           contains7 = case_when(str_detect(text, 
+                                            word7) == T ~ 1),
+           contains8 = case_when(str_detect(text, 
+                                            word8) == T ~ 1),
+           contains9 = case_when(str_detect(text, 
+                                            word9) == T ~ 1),
+           contains10 = case_when(str_detect(text, 
+                                            word10) == T ~ 1))
+  percentages <- tibble(percent = round((colSums(additional_comments[2:11], na.rm = T)/nrow(additional_comments))*100, 2),
+                        word = df$word,
+                        n = df$n)
 }
 ```
 
@@ -115,8 +219,49 @@ factor_df <- map_df(teaching_df[cols_agree], ~ dplyr::recode_factor(., "Strongly
          ApplyNext4to6Weeks = likely_to_apply_46_weeks,
          DesignedToHelpLearn = designed_to_help_me_learn,
          RoleRelevance = todays_topic_was_relevant_for_my_role,
-         SS = learning_session_satisfaction) # Rename for correlogram
-ggc <- GGally::ggcorr(data = factor_df, palette = "RdBu", label = T, label_size = 5, label_color = "white", hjust = 0.8, method = "pairwise", size = 0)
+         SS = learning_session_satisfaction) %>%
+  drop_na()# Rename for correlogram
+factor_df_na <- map_df(teaching_df[cols_agree], ~ dplyr::recode_factor(., "Strongly agree" = 2,
+                       "Agree" = 1,
+                       "Neither agree nor disagree" = 0,
+                       "Disagree" = -1,
+                       "Strongly disagree" = -2)) %>% # Map across all agree based columns to change to 2,1,0,-1,2
+  dplyr::mutate_all(.funs = as.character) %>% # Have to make factors characters before numeric
+  dplyr::mutate_all(.funs = as.numeric) %>% # Otherwise it changes to 1-5, purely aesthetic preference here
+  bind_cols(teaching_df$likely_to_recommend_colleague_friend) %>% # Add other numeric column from df
+  rename(Recommend = ...9, 
+         `CommunityOfLearners` = s_he_effectively_built_a_community_of_learners_13,
+         CommunityOfLearners2 = s_he_effectively_built_a_community_of_learners_17,
+         ClearFacilitation2 = s_he_facilitated_the_content_clearly_16,
+         ClearFacilitation = s_he_facilitated_the_content_clearly_12,
+         ApplyNext4to6Weeks = likely_to_apply_46_weeks,
+         DesignedToHelpLearn = designed_to_help_me_learn,
+         RoleRelevance = todays_topic_was_relevant_for_my_role,
+         SS = learning_session_satisfaction)
+factor_df_gg <- map_df(teaching_df[cols_agree], ~ dplyr::recode_factor(., "Strongly agree" = 2,
+                       "Agree" = 1,
+                       "Neither agree nor disagree" = 0,
+                       "Disagree" = -1,
+                       "Strongly disagree" = -2)) %>% # Map across all agree based columns to change to 2,1,0,-1,2
+  dplyr::mutate_all(.funs = as.character) %>% # Have to make factors characters before numeric
+  dplyr::mutate_all(.funs = as.numeric) %>% # Otherwise it changes to 1-5, purely aesthetic preference here
+  bind_cols(teaching_df$likely_to_recommend_colleague_friend) %>% # Add other numeric column from df
+  rename(Recommend = ...9, 
+         `CommunityOfLearners` = s_he_effectively_built_a_community_of_learners_13,
+         CommunityOfLearners2 = s_he_effectively_built_a_community_of_learners_17,
+         ClearFacilitation2 = s_he_facilitated_the_content_clearly_16,
+         ClearFacilitation = s_he_facilitated_the_content_clearly_12,
+         ApplyNext4to6Weeks = likely_to_apply_46_weeks,
+         DesignedToHelpLearn = designed_to_help_me_learn,
+         RoleRelevance = todays_topic_was_relevant_for_my_role,
+         SS = learning_session_satisfaction) %>%
+  bind_cols(date_for_the_session = teaching_df$date_for_the_session)
+ggc <- GGally::ggcorr(data = factor_df, palette = "RdBu", label = T, label_size = 5, label_color = "white", hjust = 0.8, method = "pairwise", size = 0) +
+  theme(text = element_text(family = "Oswald"),
+        plot.title = element_text(hjust = 0.5))
+ggc_na <- GGally::ggcorr(data = factor_df_na, palette = "RdBu", label = T, label_size = 5, label_color = "white", hjust = 0.8, method = "pairwise", size = 0) +
+  theme(text = element_text(family = "Oswald"),
+        plot.title = element_text(hjust = 0.5))
 lbs <- c("I am satisfied with the overall quality of today's professional learning session.", 
 "Today's topic was relevant for my role.", "The activities of today's session were well-designed to help me learn.", "How likely are you to apply this learning to your practice in the next 4-6 weeks?", 
 "S/he facilitated the content clearly (1)", 
@@ -124,8 +269,192 @@ lbs <- c("I am satisfied with the overall quality of today's professional learni
 "S/he effectively built a community of learners (2)",
 "How likely are you to recommend this professional learning to a colleague or friend?")
 fake_text_df <- tibble(x = seq(ggc), y = seq(ggc), lbs = gsub("([^ ]+ [^ ]+) ", "\\1\n", lbs))
-ggc + geom_text(data = fake_text_df, aes(x, y, label = lbs), size = 1.75, hjust = 0.58, vjust = 0.39, fontface = "bold") # Correlogram with some text adjustments to make things clear
+ggc + geom_text(data = fake_text_df, aes(x, y, label = lbs), 
+                size = 1.75, 
+                hjust = 0.58, 
+                vjust = 0.39, 
+                fontface = "bold",
+                family = "Oswald") +# Correlogram with some text adjustments to make things clear
+  ggtitle("Without NAs")
+ggc_na + geom_text(data = fake_text_df, aes(x, y, label = lbs), 
+                size = 1.75, 
+                hjust = 0.58, 
+                vjust = 0.39, 
+                fontface = "bold",
+                family = "Oswald") +
+  ggtitle("With NAs")# Correlogram with some text adjustments to make things clear
+factor_df_na %>% 
+  pivot_longer(cols = !Recommend, names_to = "Agree/Disagree", values_to = "values") %>%
+  ggplot(aes(x = values)) +
+  geom_histogram() +
+  facet_wrap( ~ `Agree/Disagree`, ncol = 2) +
+  theme_tl() +
+  labs(x = "Values", y = "Count")
+factor_df_gg %>%
+  rename(`Likely to Apply 4-6 Weeks` = ApplyNext4to6Weeks,
+         `Recommend to Friend or Colleague` = Recommend, 
+         `Community of Learners` = CommunityOfLearners,
+         `Community of Learners (2nd Fac)` = CommunityOfLearners2,
+         `Clear Facilitation (2nd Fac)` = ClearFacilitation2,
+         `Clear Facilitation` = ClearFacilitation,
+         `Designed to Help Learn` = DesignedToHelpLearn,
+         `Relevance to Role` = RoleRelevance,
+         `Learning Session Satisfaction` = SS) %>%
+  pivot_longer(cols = !c("Recommend to Friend or Colleague", "date_for_the_session"), names_to = "Agree/Disagree", values_to = "values") %>%
+  select(-`Recommend to Friend or Colleague`) %>%
+  ggplot(aes(x = date_for_the_session, y = values, color = `Agree/Disagree`)) +
+  geom_jitter(alpha = 0.1) +
+  geom_smooth(size = 2) +
+  # ggpmisc::stat_poly_eq(formula = y ~ x, aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~~")), parse = T,
+  #                       label.x = "right", label.y = "bottom") +
+  facet_wrap( ~ factor(`Agree/Disagree`, levels = c("Likely to Apply 4-6 Weeks", "Learning Session Satisfaction", "Relevance to Role", "Designed to Help Learn", 
+"Clear Facilitation", "Clear Facilitation (2nd Fac)", 
+"Community of Learners (2nd Fac)", "Community of Learners", "Recommend to Friend or Colleague", 
+"date_for_the_session")), ncol = 2) +
+  scale_color_manual(values = col(8)) +
+  scale_x_date(breaks = pretty_breaks(n = 12)) +
+  theme_tl() +
+  theme(strip.background = element_rect(fill = "#046084"),
+        axis.title.y = element_text(angle = 90)) +
+  labs(x = "Date", y = "Score")
+ggsave(here("Images/LocalizedTimeRegression.png"), width = 16, height = 9)
+factor_df_gg %>%
+  pivot_longer(cols = !c("Recommend", "date_for_the_session"), names_to = "Agree/Disagree", values_to = "values") %>%
+  select(-Recommend) %>%
+  group_by(date_for_the_session, `Agree/Disagree`) %>%
+  mutate(mean_value = mean(values, na.rm = T), `Agree/Disagree` = `Agree/Disagree`) %>%
+  ggplot() +
+  geom_line(aes(x = date_for_the_session, y = values, color = `Agree/Disagree`)) +
+  geom_point(aes(x = date_for_the_session, y = values, color = `Agree/Disagree`)) +
+  scale_x_date(breaks = pretty_breaks(n = 12)) +
+  facet_wrap( ~ `Agree/Disagree`, ncol = 2) +
+  scale_color_manual(values = col(8)) +
+  theme_tl() +
+  theme(strip.background = element_rect(fill = "#046084"),
+        axis.title.y = element_text(angle = 90)) +
+  labs(x = "Date", y = "Mean")
+
+factor_df_gg %>%
+  pivot_longer(cols = !c("Recommend", "date_for_the_session"), names_to = "Agree/Disagree", values_to = "values") %>%
+  select(-Recommend) %>%
+  drop_na() %>%
+  ggplot(aes(x = date_for_the_session, y = values, color = `Agree/Disagree`)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  ggpmisc::stat_poly_eq(formula = y ~ x, aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~~")), parse = T,
+                        label.x = "right", label.y = "bottom") +
+  # facet_wrap( ~ `Agree/Disagree`, ncol = 2) +
+  scale_x_date(breaks = pretty_breaks(n = 7)) +
+  scale_color_manual(values = col(8)) +
+  theme_tl() +
+  labs(x = "Values", y = "Count") +
+  theme(strip.background = element_rect(fill = "#046084"))
+tbl_regression(lm(ApplyNext4to6Weeks ~ ., data = factor_df))
+tbl_regression(lm(ApplyNext4to6Weeks ~ ., data = factor_df_na)) # Literally no difference so it must be discounting NAs already
+tbl_regression(lm(SS ~ ., data = factor_df))
+tbl_regression(lm(RoleRelevance ~ ., data = factor_df))
+tbl_regression(lm(DesignedToHelpLearn ~ ., data = factor_df))
+GGally::ggpairs(factor_df_gg %>%
+  pivot_longer(cols = !c("Recommend", "date_for_the_session"), names_to = "Agree/Disagree", values_to = "values") %>%
+    select(-date_for_the_session),
+  ggplot2::aes(color = `Agree/Disagree`)) +
+  scale_color_manual(values = col(8)) +
+  scale_fill_manual(values = col(8)) +
+  theme_tl()
+factor_df_pair <- factor_df %>% 
+  rename(`Recommend to Friend or Colleague` = Recommend, 
+         `Community of Learners` = CommunityOfLearners,
+         `Community of Learners (2nd Fac)` = CommunityOfLearners2,
+         `Clear Facilitation (2nd Fac)` = ClearFacilitation2,
+         `Clear Facilitation` = ClearFacilitation,
+         `Likely to Apply 4-6 Weeks` = ApplyNext4to6Weeks,
+         `Designed to Help Learn` = DesignedToHelpLearn,
+         `Relevance to Role` = RoleRelevance,
+         `Learning Session Satisfaction` = SS)
+GGally::ggpairs(factor_df_pair, upper = list(continuous = wrap("cor", size = 5)),
+                  lower = list(continuous = wrap(c("smooth"),
+                                                 alpha = 0.3,
+                                                 size = 0.1)),
+                  diag = list(continuous = "densityDiag"),
+                color = "#046489") +
+  # scale_color_manual(values = col(9)) +
+  theme_tl() +
+  theme(panel.grid.major = element_blank())
+ggsave(here("Images/CorrelogramConfirmation.png"), width = 16, height = 9)
 ```
+
+
+```{r}
+factor_df_gg %>%
+  select(-Recommend) %>%
+  drop_na() %>%
+  ggplot(aes(x = ApplyNext4to6Weeks, y = SS)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  ggpmisc::stat_poly_eq(formula = y ~ x, aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~~")), parse = T,
+                        label.x = "right", label.y = "bottom") +
+  theme_tl() +
+  labs(x = "Next 4 to 6 Weeks", y = "SS") +
+  theme(strip.background = element_rect(fill = "#046084"))
+factor_df_gg %>%
+  select(-Recommend) %>%
+  drop_na() %>%
+  ggplot(aes(x = ApplyNext4to6Weeks, y = DesignedToHelpLearn)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  ggpmisc::stat_poly_eq(formula = y ~ x, aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~~")), parse = T,
+                        label.x = "right", label.y = "bottom") +
+  theme_tl() +
+  labs(x = "Next 4 to 6 Weeks", y = "SS") +
+  theme()
+```
+
+
+```{r}
+ggc <- GGally::ggcorr(data = factor_df, palette = "RdBu", label = T, label_size = 5, label_color = "white", hjust = 0.8, method = c("complete.obs", "spearman"), size = 0) +
+  theme(text = element_text(family = "Oswald"),
+        plot.title = element_text(hjust = 0.5))
+ggc_na <- GGally::ggcorr(data = factor_df_na, palette = "RdBu", label = T, label_size = 5, label_color = "white", hjust = 0.8, method = c("complete.obs", "spearman"), size = 0) +
+  theme(text = element_text(family = "Oswald"),
+        plot.title = element_text(hjust = 0.5))
+ggc_pre <- GGally::ggcorr(data = dplyr::filter(factor_df_gg, date_for_the_session < as.Date("2020-04-01")) %>% drop_na(), palette = "RdBu", label = T, label_size = 5, label_color = "white", hjust = 0.8, method = c("complete.obs", "spearman"), size = 0) +
+  theme(text = element_text(family = "Oswald"),
+        plot.title = element_text(hjust = 0.5))
+ggc_post <- GGally::ggcorr(data = dplyr::filter(factor_df_gg, date_for_the_session > as.Date("2020-04-01")) %>% drop_na(), palette = "RdBu", label = T, label_size = 5, label_color = "white", hjust = 0.8, method = c("complete.obs", "spearman"), size = 0) +
+  theme(text = element_text(family = "Oswald"),
+        plot.title = element_text(hjust = 0.5))
+ggc + geom_text(data = fake_text_df, aes(x, y, label = lbs), 
+                size = 1.75, 
+                hjust = 0.58, 
+                vjust = 0.39, 
+                fontface = "bold",
+                family = "Oswald") +# Correlogram with some text adjustments to make things clear
+  ggtitle("Without NAs")
+ggc_na + geom_text(data = fake_text_df, aes(x, y, label = lbs), 
+                size = 1.75, 
+                hjust = 0.58, 
+                vjust = 0.39, 
+                fontface = "bold",
+                family = "Oswald") +
+  ggtitle("With NAs")# Correlogram with some text adjustments to make things clear
+ggc_pre + geom_text(data = fake_text_df, aes(x, y, label = lbs), 
+                size = 1.75, 
+                hjust = 0.58, 
+                vjust = 0.39, 
+                fontface = "bold",
+                family = "Oswald") +# Correlogram with some text adjustments to make things clear
+  ggtitle("Pre-Pandemic")
+ggsave(here("Images/CorrelogramPrePandemic.png"), width = 12, height = 12)
+ggc_post + geom_text(data = fake_text_df, aes(x, y, label = lbs), 
+                size = 1.75, 
+                hjust = 0.58, 
+                vjust = 0.39, 
+                fontface = "bold",
+                family = "Oswald") +
+  ggtitle("Post-Pandemic")# Correlogram with some text adjustments to make things clear
+ggsave(here("Images/CorrelogramPostPandemic.png"), width = 12, height = 12)
+```
+
 
 To supplement the results of the correlogram I create a summary statistics table where you can see the number and percentage of each level of agreeing:
 
@@ -223,35 +552,117 @@ text_additional_comments %>%
   labs(x = "", y = "", title = "Top 10 Words in Additional Comments") + 
   coord_flip() +
   theme(legend.position = "none")
-NAs <- c(NA, "na", "n/a", "no", "nope", "Na") # Different ways of saying no comment to filter out
+NAs <- c(NA, "na", "n/a", "no", "nope", "Na", "nothing", "Nothing") # Different ways of saying no comment to filter out
 text_additional_comments_graph <- text_additional_comments %>%
   count(word, sort = TRUE) %>%
   dplyr::filter(word != NAs) %>%
   mutate(word = str_to_title(word)) %>%
   mutate(word = reorder(word, n)) %>%
+  mutate(percent = round(100*(n/sum(n, na.rm = T)), 2)) %>%
   slice(1:10)
-ggplot(text_additional_comments_graph, aes(word, n, fill = -n)) +
+
+word1 <- paste0(str_to_lower(as.character(text_additional_comments_graph$word[1])),
+           "|", str_to_title(as.character(text_additional_comments_graph$word[1])))
+word2 <- paste0(str_to_lower(as.character(text_additional_comments_graph$word[2])),
+           "|", str_to_title(as.character(text_additional_comments_graph$word[2])))
+word3 <- paste0(str_to_lower(as.character(text_additional_comments_graph$word[3])),
+           "|", str_to_title(as.character(text_additional_comments_graph$word[3])))
+word4 <- paste0(str_to_lower(as.character(text_additional_comments_graph$word[4])),
+           "|", str_to_title(as.character(text_additional_comments_graph$word[4])))
+word5 <- paste0(str_to_lower(as.character(text_additional_comments_graph$word[5])),
+           "|", str_to_title(as.character(text_additional_comments_graph$word[5])))
+word6 <- paste0(str_to_lower(as.character(text_additional_comments_graph$word[6])),
+           "|", str_to_title(as.character(text_additional_comments_graph$word[6])))
+word7 <- paste0(str_to_lower(as.character(text_additional_comments_graph$word[7])),
+           "|", str_to_title(as.character(text_additional_comments_graph$word[7])))
+word8 <- paste0(str_to_lower(as.character(text_additional_comments_graph$word[8])),
+           "|", str_to_title(as.character(text_additional_comments_graph$word[8])))
+word9 <- paste0(str_to_lower(as.character(text_additional_comments_graph$word[9])),
+           "|", str_to_title(as.character(text_additional_comments_graph$word[9])))
+word10 <- paste0(str_to_lower(as.character(text_additional_comments_graph$word[10])),
+           "|", str_to_title(as.character(text_additional_comments_graph$word[10])))
+
+additional_comments <- text_data %>%
+  select(do_you_have_additional_comments) %>%
+  drop_na() %>%
+  mutate(contains1 = case_when(str_detect(do_you_have_additional_comments, 
+                                          word1) == T ~ 1),
+         contains2 = case_when(str_detect(do_you_have_additional_comments, 
+                                          word2) == T ~ 1),
+         contains3 = case_when(str_detect(do_you_have_additional_comments, 
+                                          word3) == T ~ 1),
+         contains4 = case_when(str_detect(do_you_have_additional_comments, 
+                                          word4) == T ~ 1),
+         contains5 = case_when(str_detect(do_you_have_additional_comments, 
+                                          word5) == T ~ 1),
+         contains6 = case_when(str_detect(do_you_have_additional_comments, 
+                                          word6) == T ~ 1),
+         contains7 = case_when(str_detect(do_you_have_additional_comments, 
+                                          word7) == T ~ 1),
+         contains8 = case_when(str_detect(do_you_have_additional_comments, 
+                                          word8) == T ~ 1),
+         contains9 = case_when(str_detect(do_you_have_additional_comments, 
+                                          word9) == T ~ 1),
+         contains10 = case_when(str_detect(do_you_have_additional_comments, 
+                                          word10) == T ~ 1))
+percentages <- tibble(percent = round((colSums(additional_comments[2:11], na.rm = T)/nrow(additional_comments))*100, 2),
+                      word = text_additional_comments_graph$word,
+                      n = text_additional_comments_graph$n)
+
+# Text size and color change
+text_col <- ifelse(percentages$word == "Knowledgeable", "black", "#324D56")
+text_size <- ifelse(percentages$word == "Knowledgeable", 18, 12) # Super weird but enter the bottom text to change the top entry
+# NOTE THAT I SHOULD USE ELEMENT_MARKDOWN HERE, JUST NOT WORTH THE TIME RIGHT NOW
+
+# Initial Bar Chart
+(g1 <- ggplot(text_additional_comments_graph, aes(word, n, fill = factor(n))) +
   geom_col(color = "black") +
-  scale_color_manual(values = c(col(nrow(text_additional_comments_graph)))) +
+  scale_fill_manual(values = rev(c(col(nrow(text_additional_comments_graph))))) +
   geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
   scale_y_continuous(breaks = scales::breaks_pretty(n = 8)) +
-  labs(x = "", y = "", title = "Top 10 Additional Comments Words without Non-Responses") + 
+  labs(x = "", y = "", title = "10 Most Frequent Words in Additional Comments") + 
   coord_flip() +
   theme_bw() +
   theme(
           legend.position = "none",
           legend.title = element_blank(),
-          plot.title = element_text(hjust = 0.5, font, size = 16),
+          plot.title = element_text(hjust = 0.5, font, size = 18),
           plot.subtitle = element_text(hjust = 0.5, font),
           panel.grid.major.x = element_blank(),
           panel.grid.minor.y = element_blank(),
           panel.grid.minor.x = element_blank(),
           panel.border = element_blank(),
-          axis.text.x = element_text(color = "#324D56", font, size = 12),
+          axis.text.x = element_text(color = "#324D56", font, size = 14),
           axis.title.y = element_text(font),
-          axis.text.y = element_text(color = "#324D56", font, size = 12),
+          axis.text.y = element_text(color = text_col, font, size = text_size),
           axis.ticks.length = unit(0.2, "cm"),
-          text = element_text(family = font))
+          text = element_text(family = font)))
+(pie1 <- ggplot2::ggplot(percentages, aes(x = 0, y = n, fill = reorder(word, n))) + #Pie chart input, ordered by n
+            labs(fill = NULL, x = NULL, y = NULL,
+                 title = NULL) +
+            geom_bar(stat = "identity", width = 0.5, color = "gray10") + # Using bar columns put in polar coordinates later
+            geom_text(aes(label = paste0(word, "\n", percent, "%"),
+                          x = 0.6, # Outwards distance from pie chart
+                          color = reorder(word, n)),
+                      position = position_stack(vjust = 0.5), #position stack normally stacks bars, but here it keeps the text in the right place once put in polar
+                      size = 3,
+                      fontface = "bold",
+                      family = "Oswald") + # Add bold text with percentage and variable label
+  geom_text(aes(x = 0, y = 0, label = "2.49% of Additional\nComments Mention Time"), family = "Oswald", size = 3.8, fontface = "bold", vjust = 3.2) +
+            scale_x_continuous(expand = c(1, 0)) + # Change x to make a donut
+            coord_polar(theta = "y", direction = -1) + # Make bars polar
+            scale_fill_manual(values = c(rev(col(nrow(text_additional_comments_graph))))) + # custom colors
+            scale_color_manual(values = c(rev(col(nrow(text_additional_comments_graph))))) +
+            ggpubr::theme_transparent() +
+            theme(legend.position = "none",
+                  plot.title = element_text(hjust = 0.5, family = "Oswald"),
+                  # plot.background = element_rect(fill = "#355c7d", color = "#355c7d")
+                  plot.margin = margin(-5,-5,0,-5, unit = "cm")
+                  ))
+cowplot::ggdraw(g1) +
+  draw_plot(pie1, 0.55,-0.03,0.5,0.5) +
+  draw_label("(Percentage Labels Represent %\nComposition of All Additional Comments)", x = 0.8, y = 0.3, fontfamily = "Oswald",
+             fontface = "bold", size = 7)
 ggsave(here("Images/PresentationAdditionalComments.png"), width = 1629.09/100, height = 970/100)
 ```
 
@@ -263,13 +674,23 @@ text_improved_experience_graph <- text_improved_experience %>%
   dplyr::filter(word != c("na")) %>%
   mutate(word = reorder(word, n)) %>%
   mutate(word = str_to_title(word)) %>%
+  mutate(percent = round(100*(n/sum(n, na.rm = T)), 2)) %>%
   slice(1:10)
-ggplot(text_improved_experience_graph, aes(reorder(word, n), n, fill = -n)) +
+
+# Table for pie graph
+percentage_experience <- percent_contained(text_improved_experience_graph, string = what_could_have_improved_your_experience)
+
+# Text size and color change
+text_col <- ifelse(percentage_experience$word == "Curriculum", "black", "#324D56")
+text_size <- ifelse(percentage_experience$word == "Curriculum", 18, 12)
+
+# Initial bar chart
+g2 <- ggplot(text_improved_experience_graph, aes(reorder(word, n), n, fill = factor(n))) +
   geom_col(color = "black") +
   scale_y_continuous(breaks = scales::breaks_pretty(n = 8)) +
-  scale_color_manual(values = c(col(nrow(text_additional_comments_graph)))) +
+  scale_fill_manual(values = rev(c(col(nrow(text_additional_comments_graph))))) +
   geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
-  labs(x = "", y = "", title = "Top 10 Words for What Could Have Improved Experience") + 
+  labs(x = "", y = "", title = '10 Most Frequent Words in "What Could Have Improved your Experience?"') + 
   coord_flip() +
   theme_bw() +
   theme(
@@ -283,9 +704,36 @@ ggplot(text_improved_experience_graph, aes(reorder(word, n), n, fill = -n)) +
           panel.border = element_blank(),
           axis.text.x = element_text(color = "#324D56", font, size = 12),
           axis.title.y = element_text(font),
-          axis.text.y = element_text(color = "#324D56", font, size = 12),
+          axis.text.y = element_text(color = text_col, font, size = text_size),
           axis.ticks.length = unit(0.2, "cm"),
           text = element_text(family = font))
+# Pie chart
+(pie2 <- ggplot2::ggplot(percentage_experience, aes(x = 0, y = n, fill = reorder(word, n))) + #Pie chart input, ordered by n
+            labs(fill = NULL, x = NULL, y = NULL,
+                 title = NULL) +
+            geom_bar(stat = "identity", width = 0.5, color = "gray10") + # Using bar columns put in polar coordinates later
+            geom_text(aes(label = paste0(word, "\n", percent, "%"),
+                          x = 0.6, # Outwards distance from pie chart
+                          color = reorder(word, n)),
+                      position = position_stack(vjust = 0.5), #position stack normally stacks bars, but here it keeps the text in the right place once put in polar
+                      size = 3,
+                      fontface = "bold",
+                      family = "Oswald") + # Add bold text with percentage and variable label
+  geom_text(aes(x = 0, y = 0, label = '11.07% of Responses to\n"What Could Have Improved Your\nExperience" Mention Time'), family = "Oswald", size = 3.8, fontface = "bold", vjust = 3.2) +
+            scale_x_continuous(expand = c(1, 0)) + # Change x so expand is not default and adds no padding so the bars will produce a circle not a donut
+            coord_polar(theta = "y", direction = -1) + # Make bars polar
+            scale_fill_manual(values = c(rev(col(nrow(text_additional_comments_graph))))) + # custom colors
+            scale_color_manual(values = c(rev(col(nrow(text_additional_comments_graph))))) +
+            ggpubr::theme_transparent() +
+            theme(legend.position = "none",
+                  plot.title = element_text(hjust = 0.5, family = "Oswald"),
+                  # plot.background = element_rect(fill = "#355c7d", color = "#355c7d")
+                  plot.margin = margin(-5,-5,0,-5, unit = "cm")
+                  ))
+cowplot::ggdraw(g2) +
+  draw_plot(pie2, 0.45,-0.05,0.7,0.7) +
+  draw_label("(Percentage Labels Represent %\nComposition of All Text Entries)", x = 0.8, y = 0.345, fontfamily = "Oswald",
+             fontface = "bold", size = 9)
 ggsave(here("Images/PresentationImprovedExperience.png"), width = 1629.09/100, height = 970/100)
 ```
 
@@ -323,19 +771,33 @@ ggplot(text_learning_try_graph, aes(reorder(word, n), n, fill = -n)) +
 "Collaboration" appears to be working well, and "discussions" appears too so group based stuff seems very successful. "Time" makes another appearance as well.
 
 ```{r fig.width = 14}
+# Table for bar chart
 text_professional_learning_graph <- text_professional_learning %>%
   count(word, sort = TRUE) %>%
   drop_na() %>%
   mutate(word = reorder(word, n)) %>%
   mutate(word = str_to_title(word)) %>%
-  slice(1:10)
+  mutate(percent = round(100*(n/sum(n, na.rm = T)), 2)) %>%
+  slice(1:10) %>% # Slice top 10
+  mutate(word_color = ifelse(word %in% c("Collaboration", "Time"),
+                             glue::glue("<i style='color:black;font-size:17px'>{word}</i>"),
+                             glue::glue("<i>{word}</i>"))) # Element markdown stuff
 
-ggplot(text_professional_learning_graph, aes(reorder(word, n), n, fill = -n)) +
+# Table for pie graph
+percentage_learning <- percent_contained(text_professional_learning_graph, 
+                                         string = overall_what_went_well_in_this_professional_learning)
+
+# Text size and color change
+text_col <- ifelse(percentage_learning$word %in% c("Information", "Understanding"), "black", "#324D56")
+text_size <- ifelse(percentage_learning$word %in% c("Information", "Understanding"), 15, 12)
+
+# Initial bar chart
+g3 <- (ggplot(text_professional_learning_graph, aes(reorder(word, n), n, fill = factor(n))) +
   geom_col(color = "black") +
   scale_y_continuous(breaks = scales::breaks_pretty(n = 8)) +
-  scale_color_manual(values = c(col(nrow(text_professional_learning_graph)))) +
+  scale_fill_manual(values = c(rev(col(nrow(text_additional_comments_graph))))) + # custom colors
   geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
-  labs(x = "", y = "", title = "Top 10 Words for What Went Well in the Learning Experience") + 
+  labs(x = "", y = "", title = '10 Most Frequent Words in "What Went Well in the Learning Experience?"') + 
   coord_flip() +
   theme_bw() +
   theme(
@@ -349,9 +811,37 @@ ggplot(text_professional_learning_graph, aes(reorder(word, n), n, fill = -n)) +
           panel.border = element_blank(),
           axis.text.x = element_text(color = "#324D56", font, size = 12),
           axis.title.y = element_text(font),
-          axis.text.y = element_text(color = "#324D56", font, size = 12),
+          axis.text.y = element_text(font, color = text_col, size = text_size),
           axis.ticks.length = unit(0.2, "cm"),
-          text = element_text(family = font))
+          text = element_text(family = font)))
+(pie3 <- ggplot2::ggplot(percentage_learning, aes(x = 0, y = n, fill = reorder(word, n))) + #Pie chart input, ordered by n
+            labs(fill = NULL, x = NULL, y = NULL,
+                 title = NULL) +
+            geom_bar(stat = "identity", width = 0.5, color = "gray10") + # Using bar columns put in polar coordinates later
+            geom_text(aes(label = paste0(word, "\n", percent, "%"),
+                          x = 0.6, # Outwards distance from pie chart
+                          color = reorder(word, n)),
+                      position = position_stack(vjust = 0.5), #position stack normally stacks bars, but here it keeps the text in the right place once put in polar
+                      size = 2.7,
+                      fontface = "bold",
+                      family = "Oswald") + # Add bold text with percentage and variable label
+  geom_text(aes(x = 0, y = 0, 
+                label = '6.54% of Responses to\n"What Went Well in the Learning\nExperience" Mention Time,\nand 6.72% Mention\nCollaboration'), 
+            family = "Oswald", size = 3.2, fontface = "bold", vjust = 1.73) +
+            scale_x_continuous(expand = c(1, 0)) + # Change x so expand is not default and adds no padding so the bars will produce a circle not a donut
+            coord_polar(theta = "y", direction = -1) + # Make bars polar
+            scale_fill_manual(values = c(rev(col(nrow(text_additional_comments_graph))))) + # custom colors
+            scale_color_manual(values = c(rev(col(nrow(text_additional_comments_graph))))) +
+            ggpubr::theme_transparent() +
+            theme(legend.position = "none",
+                  plot.title = element_text(hjust = 0.5, family = "Oswald"),
+                  # plot.background = element_rect(fill = "#355c7d", color = "#355c7d")
+                  plot.margin = margin(-5,-5,0,-5, unit = "cm")
+                  ))
+cowplot::ggdraw(g3) +
+  draw_plot(pie3, 0.6,-0.05,0.5,0.5) +
+  draw_label("(Percentage Labels Represent %\nComposition of All Text Entries)", x = 0.85, y = 0.255, fontfamily = "Oswald",
+             fontface = "bold", size = 7)
 ggsave(here("Images/PresentationProfessionalLearning.png"), width = 1629.09/100, height = 970/100)
 ```
 
@@ -474,15 +964,25 @@ bigrams_united <- filtered %>%
 # Graph bigrams with over 100 occurrences
 bigrams_united_graph <- bigrams_united %>%
   mutate(word = reorder(bigram, n)) %>%
+  mutate(percent = round(100*(n/sum(n, na.rm = T)), 2)) %>%
   slice(1:10) %>%
   mutate(word = str_to_title(word))
 
-ggplot(bigrams_united_graph, aes(reorder(word, n), n, fill = -n)) +
+# Table for pie graph
+percentage_bigram <- percent_gram_contained(bigrams_united_graph)
+
+# Text size and color change
+text_col <- ifelse(percentage_bigram$word %in% c("Excited About", "Student Work"), "black", "#324D56")
+text_size <- ifelse(percentage_bigram$word %in% c("Excited About", "Student Work"), 15, 12) # Super weird but enter the bottom text to change the top entry
+# NOTE THAT I WOULD USE ELEMENT MARKDOWN BUT IT'S BUGGED WITH COWPLOT
+
+# Initial bar graph
+(g4 <- ggplot(bigrams_united_graph, aes(reorder(word, n), n, fill = factor(n))) +
   geom_col(color = "black") +
-  scale_color_manual(values = col(nrow(bigrams_united_graph))) +
+  scale_fill_manual(values = rev(col(nrow(bigrams_united_graph)))) +
   scale_y_continuous(breaks = scales::breaks_pretty(n = 8)) +
   geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
-  labs(x = "", y = "", title = "Top 10 Bigrams (Two Word Combinations)") + 
+  labs(x = "", y = "", title = "10 Most Common Bigrams (Two Word Combinations) in All Text Entries") + 
   coord_flip() +
   theme_bw() +
   theme(
@@ -496,9 +996,36 @@ ggplot(bigrams_united_graph, aes(reorder(word, n), n, fill = -n)) +
           panel.border = element_blank(),
           axis.text.x = element_text(color = "#324D56", font, size = 12),
           axis.title.y = element_text(font),
-          axis.text.y = element_text(color = "#324D56", font, size = 12),
+          axis.text.y = element_text(color = text_col, font, size = text_size),
           axis.ticks.length = unit(0.2, "cm"),
-          text = element_text(family = font))
+          text = element_text(family = font)))
+
+(pie4 <- ggplot2::ggplot(percentage_bigram, aes(x = 0, y = n, fill = reorder(word, n))) + #Pie chart input, ordered by n
+            labs(fill = NULL, x = NULL, y = NULL,
+                 title = NULL) +
+            geom_bar(stat = "identity", width = 0.5, color = "gray10") + # Using bar columns put in polar coordinates later
+            geom_text(aes(label = paste0(word, "\n", percent, "%"),
+                          x = 0.65, # Outwards distance from pie chart
+                          color = reorder(word, n)),
+                      position = position_stack(vjust = 0.5), #position stack normally stacks bars, but here it keeps the text in the right place once put in polar
+                      size = 3,
+                      fontface = "bold",
+                      family = "Oswald") + # Add bold text with percentage and variable label
+  geom_text(aes(x = 0, y = 0, label = '0.6% of All Comments\nMention "More Time"'), family = "Oswald", size = 3.8, fontface = "bold", vjust = 3.6) +
+            scale_x_continuous(expand = c(1, 0)) + # Change x so expand is not default and adds no padding so the bars will produce a circle not a donut
+            coord_polar(theta = "y", direction = -1) + # Make bars polar
+            scale_fill_manual(values = c(rev(col(nrow(text_additional_comments_graph))))) + # custom colors
+            scale_color_manual(values = c(rev(col(nrow(text_additional_comments_graph))))) +
+            ggpubr::theme_transparent() +
+            theme(legend.position = "none",
+                  plot.title = element_text(hjust = 0.5, family = "Oswald"),
+                  # plot.background = element_rect(fill = "#355c7d", color = "#355c7d")
+                  plot.margin = margin(-5,-5,0,-5, unit = "cm")
+                  ))
+cowplot::ggdraw(g4) +
+  draw_plot(pie4, 0.6,-0.05,0.5,0.5) +
+  draw_label("(Percentage Labels Represent %\nComposition of All Text Entries)", x = 0.85, y = 0.28, fontfamily = "Oswald",
+             fontface = "bold", size = 7)
 ggsave(here("Images/PresentationBigram.png"), width = 1629.09/100, height = 970/100)
 ```
 
@@ -537,17 +1064,27 @@ trigrams_united <- filtered_tri %>%
 
 # Graph bigrams with over 100 occurrences
 trigrams_united_graph <- trigrams_united %>%
-  mutate(word = reorder(trigram, n)) %>%
+  mutate(trigram = reorder(trigram, n)) %>%
+  mutate(percent = round(100*(n/sum(n, na.rm = T)), 2)) %>%
   slice(1:10) %>%
-  mutate(word = str_to_title(word))
+  mutate(trigram = reorder(trigram, n)) %>%
+  mutate(word = str_to_title(trigram))
 
-ggplot(trigrams_united_graph, aes(reorder(word, n), n, fill = -n)) +
-    geom_col(color = "black") +
-    scale_y_continuous(breaks = breaks_pretty(n = 8)) +
-    scale_color_manual(values = col(nrow(trigrams_united_graph))) +
-    geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
-    labs(x = "", y = "", title = "Top 10 Trigrams") + 
-    coord_flip() +
+# Table for pie graph
+percentage_trigram <- percent_gram_contained(trigrams_united_graph)
+
+# Text size and color change
+text_col <- ifelse(percentage_trigram$word %in% c("More Time To", "Small Group Instruction"), "black", "#324D56")
+text_size <- ifelse(percentage_trigram$word %in% c("More Time To", "Small Group Instruction"), 15, 12) 
+
+# Initial bar chart
+(g5 <- ggplot(trigrams_united_graph, aes(reorder(word, n), n, fill = factor(n))) +
+  geom_col(color = "black") +
+  ggplot2::scale_fill_manual(values = rev(col(nrow(trigrams_united_graph)))) +
+  scale_y_continuous(breaks = scales::breaks_pretty(n = 8)) +
+  geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
+  labs(x = "", y = "", title = "10 Most Common Trigrams in All Text Entries") + 
+  coord_flip() +
   theme_bw() +
   theme(
           legend.position = "none",
@@ -560,8 +1097,33 @@ ggplot(trigrams_united_graph, aes(reorder(word, n), n, fill = -n)) +
           panel.grid.minor.x = element_blank(),
           axis.text.x = element_text(color = "#324D56", font, size = 12),
           axis.title.y = element_text(font),
-          axis.text.y = element_text(color = "#324D56", font, size = 12),
-          text = element_text(family = font))
+          axis.text.y = element_text(color = text_col, font, size = text_size),
+          text = element_text(family = font)))
+(pie5 <- ggplot2::ggplot(percentage_trigram, aes(x = 0, y = n, fill = reorder(word, n))) + #Pie chart input, ordered by n
+            labs(fill = NULL, x = NULL, y = NULL,
+                 title = NULL) +
+            geom_bar(stat = "identity", width = 0.5, color = "gray4") + # Using bar columns put in polar coordinates later
+            geom_text(aes(label = paste0(gsub("( \\S+) ", "\\1\n", word), "\n", percent, "%"),
+                          x = 0.7, # Outwards distance from pie chart
+                          color = reorder(word, n)),
+                      position = position_stack(vjust = 0.5), #position stack normally stacks bars, but here it keeps the text in the right place once put in polar
+                      size = 3,
+                      fontface = "bold",
+                      family = "Oswald") + # Add bold text with percentage and variable label
+  geom_text(aes(x = 0, y = 0, label = '0.28% of All Comments\nMention "More Time To"'), family = "Oswald", size = 3.8, fontface = "bold", vjust = 3.9) +
+            scale_x_continuous(expand = c(1, 0)) + # Change x so expand is not default and adds no padding so the bars will produce a circle not a donut
+            coord_polar(theta = "y", direction = -1) + # Make bars polar
+            scale_fill_manual(values = c(rev(col(nrow(text_additional_comments_graph))))) + # custom colors
+            scale_color_manual(values = c(rev(col(nrow(text_additional_comments_graph))))) +
+            ggpubr::theme_transparent() +
+            theme(legend.position = "none",
+                  plot.title = element_text(hjust = 0.5, family = "Oswald"),
+                  # plot.background = element_rect(fill = "#355c7d", color = "#355c7d")
+                  plot.margin = margin(-5,-5,0,-5, unit = "cm")
+                  ))
+cowplot::ggdraw(g5) + 
+  draw_plot(pie5, 0.45,-0.05,0.7,0.7) + 
+  draw_label("(Percentage Labels Represent %\nComposition of All Text Entries)", x = 0.8, y = 0.375, fontfamily = "Oswald", fontface = "bold", size = 7)
 ggsave(here("Images/PresentationTrigram.png"), width = 1629.09/100, height = 970/100)
 ```
 

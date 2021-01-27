@@ -251,7 +251,7 @@ server <- function(input, output, session) {
             labs(fill = "Type", x = NULL, y = NULL,
                  title = paste(str_to_title(as.character(input$data))),
                  subtitle = "Variables with greater than 5% occurrence are labelled.") +
-            geom_bar(stat = "identity", width = 0.5, color = "gray10", size = ifelse(nrow(mydata2()) > 10,
+            geom_bar(stat = "identity", width = 0.5, color = "gray10", size = ifelse(nrow(mydata()) > 10,
                                                                                      0.1,
                                                                                      0.6)) + # Using bar columns put in polar coordinates later
             geom_text(aes(label = ifelse(percent > 5,
