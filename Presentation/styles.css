@@ -14,9 +14,10 @@
   font-size: 0.75em;
 }
 
-.reveal .controls {
-    visibility: hidden;
+reveal .controls {
+    controlsLayout: 'bottom-left';
   }
+  
 .notes .reveal .controls {
     visibility: visible;
   }
