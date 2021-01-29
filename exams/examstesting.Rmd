@@ -1,0 +1,101 @@
+---
+title: "Guide to Writing, Reading, and Evaluating Exams in R"
+author: "Duncan Gates"
+date: "1/28/2021"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+# http://www.r-exams.org/
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+library(exams)
+```
+
+## Write Exams
+
+```{r}
+# Random seed
+set.seed(403)
+# List of exercise file names
+myexam <- list(
+  "tstat2.Rnw",
+  "ttest.Rnw",
+  "relfreq.Rnw",
+  "anova.Rnw",
+  c("boxplots.Rnw", "scatterplot.Rnw"),
+  "cholesky.Rnw"
+)
+# Create exam with 2 randomly drawn versions in a pdf
+ex1 <- exams2nops(myexam, n = 2,
+  dir = "nops_pdf", name = "demo", date = "2015-07-29",
+  points = c(1, 1, 1, 2, 2, 3), showpoints = TRUE)
+```
+
+## Read exams
+
+```{r}
+# Can be processed with nops_scan
+img <- dir(system.file("nops", package = "exams"), pattern = "nops_scan",
+  full.names = TRUE)
+dir.create("nops_scan")
+file.copy(img, to = "nops_scan")
+
+nops_scan(dir = "nops_scan")
+```
+
+## Evaluate Results
+
+```{r}
+# Create a csv on the fly
+write.table(data.frame(
+  registration = c("1501090", "9901071"),
+  name = c("Jane Doe", "Ambi Dexter"),
+  id = c("jane_doe", "ambi_dexter")
+), file = "Exam-2015-07-29.csv", sep = ";", quote = FALSE, row.names = FALSE)
+
+# Evaluated by creating dataframe stored as a csv
+# Exact same thing! Pretty neat
+ev1 <- nops_eval(
+  register = "Exam-2015-07-29.csv",
+  solutions = "nops_pdf/demo.rds",
+  scans = Sys.glob("nops_scan/nops_scan_*.zip"),
+  eval = exams_eval(partial = FALSE, negative = FALSE),
+  interactive = FALSE
+)
+dir()
+```
+
+What does it look like?
+
+```{r}
+ev1
+```
+
+
+
+
+
+## Read exams
+
+```{r data-prep}
+elearn_exam <- c("swisscapital.Rmd", "deriv.Rmd", "ttest.Rmd", "boxplots.Rmd", "function.Rmd", "lm.Rmd", "fourfold2.Rmd")
+
+data(swisscapital)
+# To HTML
+exams2html("swisscapital.Rmd")
+# To moodle (xml)
+set.seed(2021-01-29)
+rxm <- exams::exams2moodle(elearn_exam)
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
