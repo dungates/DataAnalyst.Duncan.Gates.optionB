@@ -112,11 +112,11 @@ Links:
 
 - [Presentation](https://duncangates.me/Presentation.html)
 
-- [Shiny Dashboard](https://dungates.shinyapps.io/PieCharter/)
+- [Shiny Pie Chart Dashboard](https://dungates.shinyapps.io/PieCharter/)
 
 - [Interactive Jitter Chart](https://duncangates.me/PresentationInteractive.html)
 
-- [Table 1: Unfiltered](https://duncangates.me/PresentationTableggplot.html)
+- [Table 1: Unfiltered with Sentiment Scores](https://duncangates.me/PresentationTableggplot.html)
 
 - [Table 2: Filtered](https://duncangates.me/PresentationTableFilteredggplot.html)
 

@@ -230,7 +230,6 @@ factor_df_na <- map_df(teaching_df[cols_agree], ~ dplyr::recode_factor(., "Stron
   dplyr::mutate_all(.funs = as.numeric) %>% # Otherwise it changes to 1-5, purely aesthetic preference here
   bind_cols(teaching_df$likely_to_recommend_colleague_friend) %>% # Add other numeric column from df
   rename(Recommend = ...9, 
-         `CommunityOfLearners` = s_he_effectively_built_a_community_of_learners_13,
          CommunityOfLearners2 = s_he_effectively_built_a_community_of_learners_17,
          ClearFacilitation2 = s_he_facilitated_the_content_clearly_16,
          ClearFacilitation = s_he_facilitated_the_content_clearly_12,
@@ -1074,13 +1073,15 @@ trigrams_united_graph <- trigrams_united %>%
 percentage_trigram <- percent_gram_contained(trigrams_united_graph)
 
 # Text size and color change
-text_col <- ifelse(percentage_trigram$word %in% c("More Time To", "Small Group Instruction"), "black", "#324D56")
-text_size <- ifelse(percentage_trigram$word %in% c("More Time To", "Small Group Instruction"), 15, 12) 
+text_col <- ifelse(percentage_trigram$word %in% c("More Time To", "Nothing Nothing Nothing"), "black", "#324D56")
+text_size <- ifelse(percentage_trigram$word %in% c("More Time To", "Nothing Nothing Nothing"), 15, 12) 
 
 # Initial bar chart
-(g5 <- ggplot(trigrams_united_graph, aes(reorder(word, n), n, fill = factor(n))) +
+(g5 <- ggplot(trigrams_united_graph, aes(reorder(word, n), n, fill = rev(factor(n)))) +
   geom_col(color = "black") +
-  ggplot2::scale_fill_manual(values = rev(col(nrow(trigrams_united_graph)))) +
+  ggplot2::scale_fill_manual(values = c("#040404", "#04161D", "#042937", "#043B50", 
+                                        "#044E6A", "#046084", "#04739D", "#0485B7", 
+                                        "#0498D1", "#04ABEB")) +
   scale_y_continuous(breaks = scales::breaks_pretty(n = 8)) +
   geom_text(aes(label = n), hjust = -0.14, family = "Oswald") +
   labs(x = "", y = "", title = "10 Most Common Trigrams in All Text Entries") + 
@@ -1113,8 +1114,8 @@ text_size <- ifelse(percentage_trigram$word %in% c("More Time To", "Small Group 
   geom_text(aes(x = 0, y = 0, label = '0.28% of All Comments\nMention "More Time To"'), family = "Oswald", size = 3.8, fontface = "bold", vjust = 3.9) +
             scale_x_continuous(expand = c(1, 0)) + # Change x so expand is not default and adds no padding so the bars will produce a circle not a donut
             coord_polar(theta = "y", direction = -1) + # Make bars polar
-            scale_fill_manual(values = c(rev(col(nrow(text_additional_comments_graph))))) + # custom colors
-            scale_color_manual(values = c(rev(col(nrow(text_additional_comments_graph))))) +
+            scale_fill_manual(values = c(rev(col(nrow(trigrams_united_graph))))) + # custom colors
+            scale_color_manual(values = c(rev(col(nrow(trigrams_united_graph))))) +
             ggpubr::theme_transparent() +
             theme(legend.position = "none",
                   plot.title = element_text(hjust = 0.5, family = "Oswald"),

@@ -27,9 +27,10 @@ library(ggrepel) # For text output on graphs
 library(gt) # For tables
 library(lubridate) # For dates
 library(ggiraph) # For interactivity
+library(sentimentr) # For sentiment analysis
 teaching_colors <- c("#04ABEB", "#040404", "#346475", "#324D56") # Teaching Lab Color Palette - derived from logo
 col = grDevices::colorRampPalette(c("#040404", "#04ABEB")) # Color palette maker for blue theme, based on teaching lab color palette
-htmltools::tagList(rmarkdown::html_dependency_font_awesome()) # Needed so fa's in footer will show
+# htmltools::tagList(rmarkdown::html_dependency_font_awesome()) # Needed so fa's in footer will show
 
 teaching_lab_df <- read_rds(here("Data/original_df.rds")) # Read original data for column names
 
@@ -978,30 +979,35 @@ gt_plots <- map_df(teaching_lab_df[cols_agree], ~ dplyr::recode_factor(., "Stron
   dplyr::mutate_all(.funs = as.character) %>% # Have to make factors characters before numeric
   dplyr::mutate_all(.funs = as.numeric) %>% # Otherwise it changes to 1-5, purely aesthetic preference here
   rename(`Clear\nFacilitation #1` = `S/he facilitated the content clearly....12`,
-         `Communityof\nLearners #1` = `S/he effectively built a community of learners....13`,
+         `Community of\nLearners #1` = `S/he effectively built a community of learners....13`,
          `Clear\nFacilitation #2` = `S/he facilitated the content clearly....16`,
          `Community\nof Learners #2` = `S/he effectively built a community of learners....17`,
-         Satisfaction = `I am satisfied with the overall quality of today's professional learning session.`,
-         `Relevance to Role` = `Today's topic was relevant for my role.`,
-         `Help Me\n Learn` = `The activities of today's session were well-designed to help me learn.`,
-         `Apply 4-\n6 Weeks` = `How likely are you to apply this learning to your practice in the next 4-6 weeks?`) %>%
-  bind_cols(`Likeliness to Recommend to a Friend or Colleague` = teaching_df$likely_to_recommend_colleague_friend) %>% # Add other numeric column from df
+         `Satisfied with\nOverall Quality` = `I am satisfied with the overall quality of today's professional learning session.`,
+         `Relevance to\nRole` = `Today's topic was relevant for my role.`,
+         `Helped Me\n Learn` = `The activities of today's session were well-designed to help me learn.`,
+         `Apply Next 4-\n6 Weeks` = `How likely are you to apply this learning to your practice in the next 4-6 weeks?`) %>%
+  bind_cols(`Likeliness to Recommend to a Friend or Colleague` = teaching_lab_df$`How likely are you to recommend this professional learning to a colleague or friend?`) %>% # Add other numeric column from df
   bind_cols(Date = teaching_lab_df$`Date for the session`) %>%
   # drop_na() %>%
   dplyr::filter(Date > "2020-04-01") %>%
   arrange(`Likeliness to Recommend to a Friend or Colleague`) %>%
   mutate(Unique = row_number()) %>% pivot_longer(names_to = "question", values_to = "likert_numeric", cols = !c("Date", "Likeliness to Recommend to a Friend or Colleague", "Unique")) %>%
-  mutate(pos = case_when(likert_numeric >= 0 ~ 1))
+  mutate(pos = case_when(likert_numeric >= 0 ~ "positive",
+                         likert_numeric < 0 ~ "negative"))
   # nest(!c("Likeliness to Recommend to a Friend or Colleague", "Date"))
+
+# Labels for ggplot
+x_labels <- c("Strongly\nDisagree", "Disagree", "Neither Agree or Disagree", "Agree", "Strongly\nAgree")
 
 # Function for creating a plot
 plot_group <- function(name, df) {
-  plot_object <- ggplot(data = df, aes(x = factor(question), y = likert_numeric, fill = factor(pos, levels = c(1, 0)))) +
+  plot_object <- ggplot(data = df, aes(x = factor(question), y = likert_numeric, 
+                                       fill = factor(pos, levels = c("positive", "negative")))) +
   geom_col(color = "black") +
   geom_text(aes(y = 0, label = ifelse(is.na(likert_numeric), "No Data Available", "")), family = "Oswald", color = "black") +
-  scale_fill_manual(values = c("#04ABEB", "black")) +
-  labs(y = "Score", x = "Question") +
-  ggplot2::ylim(c(-2,2)) +
+  scale_fill_manual(values = c(positive = "#04ABEB", negative = "black")) +
+  labs(y = "Rating", x = "Question") +
+  scale_y_continuous(labels = x_labels, breaks = c(-2,-1,0,1,2), limits = c(-2,2)) +
   theme_tl() +
   coord_flip() +
   theme(axis.title.y = element_text(angle = 90))
@@ -1035,40 +1041,62 @@ fmt_ggplot <- fmt_gg <- function(
   )
 }
 
+# Plot data
 newdata <- gt_plots %>%
   group_by(Unique) %>%
   nest() %>%
   mutate(plot = map2(Unique, data, plot_group))
 
+# Get sentiment for table
+gt_sentiment <- sentimentr::sentiment(post_responses$`What could have improved your experience?`) %>% 
+    group_by(element_id) %>%
+    summarise(score = sum(sentiment)) %>%
+  select(-element_id) %>%
+  mutate(score = round(score, 2))
+
+# Bind then relocate sentiment
+post_responses <- post_responses %>%
+  bind_cols(`AFINN Sentiment Score` = gt_sentiment$score) 
+post_responses <- post_responses %>%
+  relocate(`AFINN Sentiment Score`, .after = `What could have improved your experience?`) %>%
+  select(-`Why did you choose this rating?`)
+# Relocate all columns
+post_responses <- post_responses[,c(4,5,6,1,2,3)]
+
+# Table
 pandemic_response_table <- post_responses %>%
   mutate(Unique = row_number()) %>%
   left_join(newdata, by = "Unique") %>%
-  rename(`Likert Plot (Blue = Agree, White = Disagree)` = plot) %>%
+  rename(`Likert Plot Scale` = plot) %>%
   select(-Unique, -data) %>%
   gt::gt() %>%
-  fmt_ggplot(columns = vars(`Likert Plot (Blue = Agree, White = Disagree)`), height = px(275), aspect_ratio = 1) %>%
+  fmt_ggplot(columns = vars(`Likert Plot Scale`), height = px(400), aspect_ratio = 1) %>%
   tab_header(
-    title = md("&#129440; **Reviews in the Post-Pandemic Era** &#129440;"),
+    title = md("&#129440; **Reviews in the Mid-Pandemic Era** &#129440;"),
     subtitle = md("Sorted *Worst-Best:* All 123 Responses")
   ) %>%
   cols_width(
     vars(`How likely are you to recommend this professional learning to a colleague or friend?`) ~ px(110),
-         everything() ~ px(250)
+    vars(`Likert Plot Scale`) ~ px(400),
+    vars(`AFINN Sentiment Score`) ~ px(130),
+         everything() ~ px(225)
   ) %>%
   cols_label(
     `How likely are you to recommend this professional learning to a colleague or friend?` = md("**Likeliness to Recommend**"),
-    `Why did you choose this rating?` = md("**Why did you choose this rating?**"), 
     `What could have improved your experience?` = md("**What could have improved your experience?**"),
+    `AFINN Sentiment Score` = md("**Positive/Negative Sentiment (-1 to 1)**"),
     `Professional training session` = md("**Professional training session**"),
     Date = md("**Date**"),
     `Select the name of your first facilitator.` = md("**Facilitator**"),
-    `Likert Plot (Blue = Agree, White = Disagree)` = md("**Likert Plot (Blue = Agree, White = Disagree)**")
+    `Likert Plot Scale` = md("**Likert Plot Ratings**")
   ) %>%
   cols_align(
     align = "center",
-    columns = vars(`How likely are you to recommend this professional learning to a colleague or friend?`)
+    columns = vars(`How likely are you to recommend this professional learning to a colleague or friend?`,
+                   `AFINN Sentiment Score`)
   ) %>%
-  data_color(columns = vars(`How likely are you to recommend this professional learning to a colleague or friend?`),
+  data_color(columns = vars(`How likely are you to recommend this professional learning to a colleague or friend?`,
+                            `AFINN Sentiment Score`),
              colors = scales::col_numeric(
                palette = col(nrow(post_responses))
                %>% as.character(),
@@ -1084,7 +1112,21 @@ pandemic_response_table <- post_responses %>%
     ),
     locations = list(
       cells_body(
-        columns = vars(`How likely are you to recommend this professional learning to a colleague or friend?`)
+        columns = vars(`Likert Plot Scale`)
+      )
+    )
+  ) %>%
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "left",
+        color = "black",
+        weight = px(3)
+      )
+    ),
+    locations = list(
+      cells_body(
+        columns = vars(`Professional training session`)
       )
     )
   ) %>%
@@ -1112,7 +1154,7 @@ pandemic_response_table <- post_responses %>%
     ),
     locations = list(
       cells_body(
-        columns = vars(`What could have improved your experience?`, `Why did you choose this rating?`, 
+        columns = vars(`What could have improved your experience?`, `AFINN Sentiment Score`, 
                        `Professional training session`, `Select the name of your first facilitator.`,
                        `Date`)
       )
@@ -1144,13 +1186,13 @@ gtsave(pandemic_response_table, here("HTML/PresentationTableggplot.html"))
 
 ```{r}
 cols_filtered <- c("Clear\nFacilitation #1",
-                "Communityof\nLearners #1", 
+                "Community of\nLearners #1", 
                 "Clear\nFacilitation #2",
                 "Community\nof Learners #2",
-                "Satisfaction",
-                "Relevance to Role",
-                "Help Me\n Learn",
-                "Apply 4-\n6 Weeks")
+                "Satisfied with\nOverall Quality",
+                "Relevance to\nRole",
+                "Helped Me\n Learn",
+                "Apply Next 4-\n6 Weeks")
 teaching_filtered_df <- teaching_lab_df %>%
   dplyr::filter(str_detect(`What could have improved your experience?`, c("more time|More time|collaborat")) == T) %>%
   dplyr::filter(`Date for the session` > "2020-04-01") %>%
@@ -1162,15 +1204,15 @@ teaching_filtered_df <- teaching_lab_df %>%
                 "S/he effectively built a community of learners....13",
                 "S/he facilitated the content clearly....16", 
                 "S/he effectively built a community of learners....17",
-         "How likely are you to recommend this professional learning to a colleague or friend?") %>%
+         "How likely are you to recommend this professional learning to a colleague or friend?") %>% 
   rename(`Clear\nFacilitation #1` = `S/he facilitated the content clearly....12`,
-         `Communityof\nLearners #1` = `S/he effectively built a community of learners....13`,
+         `Community of\nLearners #1` = `S/he effectively built a community of learners....13`,
          `Clear\nFacilitation #2` = `S/he facilitated the content clearly....16`,
          `Community\nof Learners #2` = `S/he effectively built a community of learners....17`,
-         Satisfaction = `I am satisfied with the overall quality of today's professional learning session.`,
-         `Relevance to Role` = `Today's topic was relevant for my role.`,
-         `Help Me\n Learn` = `The activities of today's session were well-designed to help me learn.`,
-         `Apply 4-\n6 Weeks` = `How likely are you to apply this learning to your practice in the next 4-6 weeks?`)
+         `Satisfied with\nOverall Quality` = `I am satisfied with the overall quality of today's professional learning session.`,
+         `Relevance to\nRole` = `Today's topic was relevant for my role.`,
+         `Helped Me\n Learn` = `The activities of today's session were well-designed to help me learn.`,
+         `Apply Next 4-\n6 Weeks` = `How likely are you to apply this learning to your practice in the next 4-6 weeks?`)
 
 gt_plots_filtered <- teaching_filtered_df %>% mutate_at(cols_filtered, ~ dplyr::recode_factor(., "Strongly agree" = 2,
                        "Agree" = 1,
@@ -1183,7 +1225,8 @@ gt_plots_filtered <- teaching_filtered_df %>% mutate_at(cols_filtered, ~ dplyr::
   arrange(`How likely are you to recommend this professional learning to a colleague or friend?`) %>%
   mutate(Unique = row_number()) %>% 
   pivot_longer(names_to = "question", values_to = "likert_numeric", cols = !c("How likely are you to recommend this professional learning to a colleague or friend?", "Unique")) %>%
-  mutate(pos = case_when(likert_numeric >= 0 ~ 1))
+  mutate(pos = case_when(likert_numeric >= 0 ~ "positive",
+                         likert_numeric < 0 ~ "negative"))
 
 newdata_filtered <- gt_plots_filtered %>%
   group_by(Unique) %>%
@@ -1194,25 +1237,26 @@ pandemic_response_table_filtered <- post_responses %>%
   dplyr::filter(str_detect(`What could have improved your experience?`, c("more time|More time|collaborat")) == T) %>%
   mutate(Unique = row_number()) %>%
   left_join(newdata_filtered, by = "Unique") %>%
-  rename(`Likert Plot (Blue = Agree, White = Disagree)` = plot) %>%
-  select(-Unique, -data) %>%
+  rename(`Likert Plot Scale` = plot) %>%
+  select(-Unique, -data, -`AFINN Sentiment Score`) %>%
   gt::gt() %>%
-  fmt_ggplot(columns = vars(`Likert Plot (Blue = Agree, White = Disagree)`), height = px(275), aspect_ratio = 1) %>%
+  fmt_ggplot(columns = vars(`Likert Plot Scale`), height = px(400), aspect_ratio = 1) %>%
   tab_header(
-    title = md("&#129440; **Reviews in the Post-Pandemic Era** &#129440;"),
+    title = md("&#129440; **Reviews in the Mid-Pandemic Era** &#129440;"),
     subtitle = md("Sorted *Worst-Best:* Filtered for Time and Collaboration")
   ) %>%
   cols_width(
     vars(`How likely are you to recommend this professional learning to a colleague or friend?`) ~ px(110),
-         everything() ~ px(250)
+    vars(`Likert Plot Scale`) ~ px(400),
+         everything() ~ px(225)
   ) %>%
   cols_label(
     `How likely are you to recommend this professional learning to a colleague or friend?` = md("**Likeliness to Recommend**"),
-    `Why did you choose this rating?` = md("**Why did you choose this rating?**"), 
     `What could have improved your experience?` = md("**What could have improved your experience?**"),
     `Professional training session` = md("**Professional training session**"),
     Date = md("**Date**"),
-    `Select the name of your first facilitator.` = md("**Facilitator**")
+    `Select the name of your first facilitator.` = md("**Facilitator**"),
+    `Likert Plot Scale` = md("**Likert Plot Ratings**")
   ) %>%
   cols_align(
     align = "center",
@@ -1234,7 +1278,21 @@ pandemic_response_table_filtered <- post_responses %>%
     ),
     locations = list(
       cells_body(
-        columns = vars(`How likely are you to recommend this professional learning to a colleague or friend?`)
+        columns = vars(`Likert Plot Scale`)
+      )
+    )
+  ) %>%
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "left",
+        color = "black",
+        weight = px(3)
+      )
+    ),
+    locations = list(
+      cells_body(
+        columns = vars(`Professional training session`)
       )
     )
   ) %>%
@@ -1262,7 +1320,7 @@ pandemic_response_table_filtered <- post_responses %>%
     ),
     locations = list(
       cells_body(
-        columns = vars(`What could have improved your experience?`, `Why did you choose this rating?`, 
+        columns = vars(`What could have improved your experience?`, 
                        `Professional training session`, `Select the name of your first facilitator.`,
                        `Date`)
       )
